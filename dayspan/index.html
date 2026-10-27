@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="canonical" href="https://time.fixoraa.tech/dayspan//">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DaySpan — Date Duration Calculator: Days Between Dates</title>
+<meta name="description" content="DaySpan is a free date duration calculator. Count exact days between two dates with weekend counts, leap days in the span, day-of-week callouts, milestone mode (10,000 days old), and an add/subtract days tool — instantly, in your browser.">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: { cream: '#FDF6EC', terra: '#C2410C', ink: '#334155', gold: '#D97706', parch: '#F8EEDC', linec: '#EAD9BE' },
+      fontFamily: { display: ['Fraunces', 'Georgia', 'serif'], body: ['Inter', 'system-ui', 'sans-serif'] }
+    }
+  }
+};
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800;9..144,900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'Inter', system-ui, sans-serif; }
+  .font-display { font-family: 'Fraunces', Georgia, serif; }
+  /* ---- ticket-style result cards: perforated middle with notches ---- */
+  .ticket { position: relative; background: #fff; border: 1px solid #EAD9BE; border-radius: 14px; box-shadow: 0 2px 6px rgba(194,65,12,.06); }
+  .ticket::before, .ticket::after { content: ""; position: absolute; top: 56%; width: 22px; height: 22px; background: #FDF6EC; border: 1px solid #EAD9BE; border-radius: 9999px; transform: translateY(-50%); z-index: 2; }
+  .ticket::before { left: -12px; }
+  .ticket::after { right: -12px; }
+  .ticket .percline { position: absolute; top: 56%; left: 14px; right: 14px; border-top: 2px dashed #EAD9BE; z-index: 1; }
+  .ticket-top { position: relative; z-index: 0; }
+  .ticket-bottom { position: relative; z-index: 0; }
+  /* ---- desk-calendar page cards ---- */
+  .calpage { background: #fff; border: 1px solid #EAD9BE; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 12px rgba(194,65,12,.08); }
+  .calpage .cap { background: #C2410C; color: #fff; }
+  .rings { display: flex; gap: 14px; justify-content: center; margin-top: -7px; position: relative; z-index: 3; }
+  .rings span { width: 10px; height: 10px; border-radius: 9999px; background: #D97706; border: 2px solid #fff; box-shadow: 0 1px 2px rgba(0,0,0,.2); }
+  input[type="date"], input[type="time"], input[type="number"], input[type="text"] { color-scheme: light; }
+  input[type="date"]:focus, input[type="time"]:focus, input[type="number"]:focus { outline: 2px solid #C2410C; outline-offset: 1px; }
+  .tabbtn[aria-selected="true"] { background: #C2410C; color: #fff; }
+  .tabbtn[aria-selected="false"] { background: #fff; color: #334155; }
+  .tabbtn[aria-selected="false"]:hover { background: #F8EEDC; }
+  details.faq-item summary::-webkit-details-marker { display: none; }
+  details.faq-item[open] .faq-chev { transform: rotate(180deg); }
+  .faq-chev { transition: transform .2s ease; }
+  .paperbg { background-image: radial-gradient(#EAD9BE 1px, transparent 1px); background-size: 22px 22px; }
+  .no-print {} 
+  @media print { .no-print { display: none !important; } }
+</style>
+</head>
+<body id="top" class="bg-cream text-ink font-body antialiased">
+
+<!-- ================= STICKY HEADER ================= -->
+<header class="sticky top-0 z-40 bg-cream/95 backdrop-blur border-b border-linec">
+  <div class="mx-auto max-w-6xl px-4 sm:px-6 h-16 flex items-center justify-between">
+    <a href="#top" class="flex items-center gap-2.5" aria-label="DaySpan home">
+      <svg width="30" height="30" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+        <rect x="3" y="6" width="26" height="23" rx="3" fill="#C2410C"/>
+        <rect x="3" y="6" width="26" height="8" rx="3" fill="#9A3412"/>
+        <rect x="8" y="3" width="3" height="7" rx="1.5" fill="#334155"/>
+        <rect x="21" y="3" width="3" height="7" rx="1.5" fill="#334155"/>
+        <circle cx="11" cy="19" r="2.2" fill="#FDF6EC"/>
+        <circle cx="16.5" cy="19" r="2.2" fill="#FDF6EC"/>
+        <circle cx="22" cy="19" r="2.2" fill="#FDF6EC"/>
+        <circle cx="11" cy="24.5" r="2.2" fill="#FDF6EC"/>
+        <circle cx="16.5" cy="24.5" r="2.2" fill="#D97706"/>
+      </svg>
+      <span class="font-display font-extrabold text-2xl tracking-tight text-terra">DaySpan</span>
+    </a>
+    <nav class="flex items-center gap-5 text-sm font-semibold" aria-label="Main navigation">
+      <a href="#top" class="text-ink hover:text-terra transition-colors">Home</a>
+      <a href="https://fixoraa.tech" class="text-ink hover:text-terra transition-colors">More Tools</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ================= TOP AD ================= -->
+<div class="no-print mx-auto max-w-6xl px-4 sm:px-6 pt-4" role="complementary" aria-label="Advertisement">
+  <div class="mx-auto text-center" style="max-width:728px">
+    <span class="block text-[10px] tracking-[0.18em] uppercase text-slate-400 mb-1.5">Advertisement</span>
+    <div class="flex justify-center overflow-hidden">
+      <div class="origin-top scale-[0.44] sm:scale-100 shrink-0">
+        <script>
+          atOptions = { 'key' : '4e68ac77881c17fe128a46565d9a4e8c', 'format' : 'iframe', 'height' : 90, 'width' : 728, 'params' : {} };
+        </script>
+        <script src="https://www.highrevenueformat.com/4e68ac77881c17fe128a46565d9a4e8c/invoke.js"></script>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= TOOL ================= -->
+<main class="mx-auto max-w-6xl px-4 sm:px-6 py-8">
+  <div class="text-center max-w-2xl mx-auto">
+    <span class="inline-flex items-center gap-1.5 bg-gold/15 text-gold border border-gold/40 rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-wider">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+      Unlimited Free Usage
+    </span>
+    <h1 class="font-display font-black text-4xl sm:text-5xl text-ink mt-4 leading-tight">How many days<br class="sm:hidden"> between <span class="text-terra">two dates?</span></h1>
+    <p class="text-ink/70 mt-3 text-base sm:text-lg">Exact day counts with weekend tallies, leap days, day-of-week callouts, milestone birthdays and a quick date jumper — calculated instantly as you type.</p>
+  </div>
+
+  <!-- Tabs -->
+  <div class="flex justify-center mt-7 no-print" role="tablist" aria-label="Calculator modes">
+    <div class="inline-flex bg-parch border border-linec rounded-full p-1 gap-1">
+      <button id="tab-duration" role="tab" aria-selected="true" class="tabbtn rounded-full px-4 sm:px-6 py-2 text-sm font-bold transition-colors" data-tab="duration">Duration</button>
+      <button id="tab-milestone" role="tab" aria-selected="false" class="tabbtn rounded-full px-4 sm:px-6 py-2 text-sm font-bold transition-colors" data-tab="milestone">Milestones</button>
+      <button id="tab-jumper" role="tab" aria-selected="false" class="tabbtn rounded-full px-4 sm:px-6 py-2 text-sm font-bold transition-colors" data-tab="jumper">Date Jumper</button>
+    </div>
+  </div>
+
+  <!-- ============ PANEL: DURATION ============ -->
+  <section id="panel-duration" role="tabpanel" aria-labelledby="tab-duration" class="mt-6">
+    <div class="grid md:grid-cols-[1fr_auto_1fr] gap-4 items-stretch max-w-4xl mx-auto">
+      <!-- Start date card -->
+      <div class="calpage">
+        <div class="cap text-center py-1.5">
+          <div id="startCap" class="text-[11px] font-extrabold tracking-[0.2em] uppercase">Start month</div>
+        </div>
+        <div class="rings" aria-hidden="true"><span></span><span></span></div>
+        <div class="text-center px-4 pt-1 pb-3">
+          <div id="startBig" class="font-display font-black text-6xl text-ink leading-none">–</div>
+          <div id="startDow" class="text-sm font-semibold text-terra mt-1">Pick a start date</div>
+          <input id="dateStart" type="date" aria-label="Start date" class="mt-3 w-full border border-linec rounded-lg px-3 py-2 text-sm bg-cream focus:border-terra">
+          <div id="startLeap" class="text-xs text-ink/60 mt-2 min-h-[1rem]"></div>
+        </div>
+      </div>
+      <!-- Swap -->
+      <div class="flex md:flex-col flex-row items-center justify-center gap-2 no-print">
+        <button id="btnSwap" title="Swap start and end dates" aria-label="Swap start and end dates" class="w-11 h-11 rounded-full bg-terra text-white flex items-center justify-center shadow hover:bg-[#9A3412] transition-colors">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4"/></svg>
+        </button>
+        <button id="btnToday" class="text-xs font-bold text-terra underline underline-offset-2 hover:text-[#9A3412]">today → end</button>
+      </div>
+      <!-- End date card -->
+      <div class="calpage">
+        <div class="cap text-center py-1.5">
+          <div id="endCap" class="text-[11px] font-extrabold tracking-[0.2em] uppercase">End month</div>
+        </div>
+        <div class="rings" aria-hidden="true"><span></span><span></span></div>
+        <div class="text-center px-4 pt-1 pb-3">
+          <div id="endBig" class="font-display font-black text-6xl text-ink leading-none">–</div>
+          <div id="endDow" class="text-sm font-semibold text-terra mt-1">Pick an end date</div>
+          <input id="dateEnd" type="date" aria-label="End date" class="mt-3 w-full border border-linec rounded-lg px-3 py-2 text-sm bg-cream focus:border-terra">
+          <div id="endLeap" class="text-xs text-ink/60 mt-2 min-h-[1rem]"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Options row -->
+    <div class="max-w-4xl mx-auto mt-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm no-print">
+      <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+        <input id="chkInclusive" type="checkbox" class="w-4 h-4 accent-[#C2410C]">
+        <span class="font-medium">Count both start <em>and</em> end dates</span>
+      </label>
+      <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+        <input id="chkTimes" type="checkbox" class="w-4 h-4 accent-[#C2410C]">
+        <span class="font-medium">Include times of day</span>
+      </label>
+    </div>
+    <div id="timeRow" class="max-w-4xl mx-auto mt-3 hidden grid-cols-2 gap-4 no-print">
+      <div class="flex items-center gap-2 justify-center">
+        <label for="timeStart" class="text-xs font-bold uppercase tracking-wider text-ink/60">Start</label>
+        <input id="timeStart" type="time" class="border border-linec rounded-lg px-3 py-2 text-sm bg-white">
+      </div>
+      <div class="flex items-center gap-2 justify-center">
+        <label for="timeEnd" class="text-xs font-bold uppercase tracking-wider text-ink/60">End</label>
+        <input id="timeEnd" type="time" class="border border-linec rounded-lg px-3 py-2 text-sm bg-white">
+      </div>
+    </div>
+
+    <!-- Big readout -->
+    <div class="max-w-4xl mx-auto mt-6">
+      <div id="resultCard" class="relative overflow-hidden rounded-2xl border border-linec bg-white shadow-[0_6px_24px_rgba(194,65,12,0.10)]" aria-live="polite">
+        <div class="paperbg absolute inset-0 opacity-40 pointer-events-none" aria-hidden="true"></div>
+        <div class="relative px-6 py-8 text-center">
+          <div id="bigRange" class="text-xs font-bold uppercase tracking-[0.18em] text-ink/50">Awaiting two dates</div>
+          <div class="mt-2 flex items-baseline justify-center gap-3">
+            <span id="bigDays" class="font-display font-black text-7xl sm:text-8xl text-terra leading-none">0</span>
+            <span class="font-display font-bold text-2xl text-ink/60">days</span>
+          </div>
+          <div id="bigSub" class="mt-3 text-sm text-ink/70 font-medium">Pick a start and an end date above — the answer appears instantly.</div>
+          <div id="preciseLine" class="mt-2 text-sm font-semibold text-gold hidden"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ticket grid -->
+    <div id="ticketGrid" class="max-w-5xl mx-auto mt-6 grid grid-cols-2 lg:grid-cols-3 gap-5 hidden">
+      <div class="ticket">
+        <div class="percline" aria-hidden="true"></div>
+        <div class="ticket-top px-4 pt-4 pb-5 text-center">
+          <div id="tBreakdown" class="font-display font-extrabold text-2xl text-ink">–</div>
+          <div class="text-[11px] font-bold uppercase tracking-wider text-ink/50 mt-1">Calendar breakdown</div>
+        </div>
+        <div class="ticket-bottom px-4 pt-5 pb-4 text-center">
+          <div id="tBreakdownSub" class="text-xs text-ink/60">years · months · days</div>
+        </div>
+      </div>
+      <div class="ticket">
+        <div class="percline" aria-hidden="true"></div>
+        <div class="ticket-top px-4 pt-4 pb-5 text-center">
+          <div id="tWeeks" class="font-display font-extrabold text-2xl text-ink">–</div>
+          <div class="text-[11px] font-bold uppercase tracking-wider text-ink/50 mt-1">Weeks</div>
+        </div>
+        <div class="ticket-bottom px-4 pt-5 pb-4 text-center">
+          <div id="tWeeksSub" class="text-xs text-ink/60">full weeks + leftover days</div>
+        </div>
+      </div>
+      <div class="ticket">
+        <div class="percline" aria-hidden="true"></div>
+        <div class="ticket-top px-4 pt-4 pb-5 text-center">
+          <div id="tWeekends" class="font-display font-extrabold text-2xl text-terra">–</div>
+          <div class="text-[11px] font-bold uppercase tracking-wider text-ink/50 mt-1">Weekend days</div>
+        </div>
+        <div class="ticket-bottom px-4 pt-5 pb-4 text-center">
+          <div id="tWeekendsSub" class="text-xs text-ink/60">Saturdays + Sundays in span</div>
+        </div>
+      </div>
+      <div class="ticket">
+        <div class="percline" aria-hidden="true"></div>
+        <div class="ticket-top px-4 pt-4 pb-5 text-center">
+          <div id="tWeekdays" class="font-display font-extrabold text-2xl text-ink">–</div>
+          <div class="text-[11px] font-bold uppercase tracking-wider text-ink/50 mt-1">Weekdays</div>
+        </div>
+        <div class="ticket-bottom px-4 pt-5 pb-4 text-center">
+          <div id="tWeekdaysSub" class="text-xs text-ink/60">Monday – Friday in span</div>
+        </div>
+      </div>
+      <div class="ticket">
+        <div class="percline" aria-hidden="true"></div>
+        <div class="ticket-top px-4 pt-4 pb-5 text-center">
+          <div id="tLeap" class="font-display font-extrabold text-2xl text-gold">–</div>
+          <div class="text-[11px] font-bold uppercase tracking-wider text-ink/50 mt-1">Leap days in span</div>
+        </div>
+        <div class="ticket-bottom px-4 pt-5 pb-4 text-center">
+          <div id="tLeapSub" class="text-xs text-ink/60">Feb 29 occurrences counted</div>
+        </div>
+      </div>
+      <div class="ticket">
+        <div class="percline" aria-hidden="true"></div>
+        <div class="ticket-top px-4 pt-4 pb-5 text-center">
+          <div id="tPct" class="font-display font-extrabold text-2xl text-terra">–</div>
+          <div class="text-[11px] font-bold uppercase tracking-wider text-ink/50 mt-1">Of an average year</div>
+        </div>
+        <div class="ticket-bottom px-4 pt-5 pb-4 text-center">
+          <div id="tPctSub" class="text-xs text-ink/60">this span as % of 365.25 days</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Copy + recents -->
+    <div class="max-w-4xl mx-auto mt-6 flex flex-col sm:flex-row items-center justify-center gap-3 no-print">
+      <button id="btnCopy" class="inline-flex items-center gap-2 bg-ink text-white font-bold text-sm rounded-full px-6 py-2.5 hover:bg-terra transition-colors disabled:opacity-40" disabled>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+        Copy summary
+      </button>
+      <span id="copyMsg" class="text-xs font-semibold text-terra h-4" aria-live="polite"></span>
+    </div>
+    <div id="recentWrap" class="max-w-4xl mx-auto mt-6 hidden no-print">
+      <h3 class="text-xs font-bold uppercase tracking-[0.18em] text-ink/50 text-center">Recent calculations</h3>
+      <div id="recentList" class="mt-2 flex flex-wrap justify-center gap-2"></div>
+    </div>
+  </section>
+</main>
+
+  <!-- ============ PANEL: MILESTONE ============ -->
+  <section id="panel-milestone" role="tabpanel" aria-labelledby="tab-milestone" class="mt-6 hidden">
+    <div class="max-w-3xl mx-auto calpage">
+      <div class="cap text-center py-2">
+        <div class="text-[11px] font-extrabold tracking-[0.2em] uppercase">Milestone mode · fun with big round numbers</div>
+      </div>
+      <div class="p-6 sm:p-8">
+        <p class="text-center text-ink/70 text-sm sm:text-base">Enter a birthdate (or any start date) and pick a day-count milestone. DaySpan tells you the exact calendar date it lands on.</p>
+        <div class="mt-5 grid sm:grid-cols-2 gap-4">
+          <div>
+            <label for="msBirth" class="text-xs font-bold uppercase tracking-wider text-ink/60">Birthdate / start date</label>
+            <input id="msBirth" type="date" class="mt-1 w-full border border-linec rounded-lg px-3 py-2.5 text-sm bg-cream">
+          </div>
+          <div>
+            <label for="msCustom" class="text-xs font-bold uppercase tracking-wider text-ink/60">Custom milestone (days)</label>
+            <input id="msCustom" type="number" min="1" max="1000000" placeholder="e.g. 12345" class="mt-1 w-full border border-linec rounded-lg px-3 py-2.5 text-sm bg-cream">
+          </div>
+        </div>
+        <div class="mt-4 flex flex-wrap justify-center gap-2 no-print" role="group" aria-label="Milestone presets">
+          <button class="msPreset rounded-full border border-linec bg-white px-4 py-1.5 text-sm font-bold hover:border-terra hover:text-terra transition-colors" data-n="1000">1,000 days</button>
+          <button class="msPreset rounded-full border border-linec bg-white px-4 py-1.5 text-sm font-bold hover:border-terra hover:text-terra transition-colors" data-n="5000">5,000 days</button>
+          <button class="msPreset rounded-full border border-terra bg-terra text-white px-4 py-1.5 text-sm font-bold" data-n="10000">10,000 days</button>
+          <button class="msPreset rounded-full border border-linec bg-white px-4 py-1.5 text-sm font-bold hover:border-terra hover:text-terra transition-colors" data-n="15000">15,000 days</button>
+          <button class="msPreset rounded-full border border-linec bg-white px-4 py-1.5 text-sm font-bold hover:border-terra hover:text-terra transition-colors" data-n="20000">20,000 days</button>
+        </div>
+        <div id="msResult" class="mt-6 hidden text-center" aria-live="polite">
+          <div class="text-xs font-bold uppercase tracking-[0.18em] text-ink/50">You will be</div>
+          <div id="msBig" class="font-display font-black text-4xl sm:text-5xl text-terra mt-1">10,000 days old</div>
+          <div class="text-lg font-semibold mt-1">on</div>
+          <div id="msDate" class="font-display font-extrabold text-3xl sm:text-4xl text-ink mt-1">–</div>
+          <div id="msDow" class="text-sm font-semibold text-ink/60 mt-1">–</div>
+          <div class="mt-5 max-w-md mx-auto">
+            <div class="flex justify-between text-xs font-bold text-ink/60 mb-1"><span>Progress</span><span id="msPct">0%</span></div>
+            <div class="h-3 rounded-full bg-parch border border-linec overflow-hidden">
+              <div id="msBar" class="h-full rounded-full bg-gradient-to-r from-gold to-terra transition-all duration-500" style="width:0%"></div>
+            </div>
+            <div id="msRemain" class="text-sm font-semibold text-ink/70 mt-2">–</div>
+          </div>
+        </div>
+        <div id="msHint" class="mt-6 text-center text-sm text-ink/50">Pick a birthdate to reveal your milestone date.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PANEL: JUMPER ============ -->
+  <section id="panel-jumper" role="tabpanel" aria-labelledby="tab-jumper" class="mt-6 hidden">
+    <div class="max-w-3xl mx-auto calpage">
+      <div class="cap text-center py-2">
+        <div class="text-[11px] font-extrabold tracking-[0.2em] uppercase">Date jumper · add or subtract days</div>
+      </div>
+      <div class="p-6 sm:p-8">
+        <p class="text-center text-ink/70 text-sm sm:text-base">Start from any date, jump forward or backward by N days. Handy for deadlines, due dates and anniversaries.</p>
+        <div class="mt-5 grid sm:grid-cols-[1fr_auto_1fr] gap-4 items-end">
+          <div>
+            <label for="jBase" class="text-xs font-bold uppercase tracking-wider text-ink/60">Base date</label>
+            <input id="jBase" type="date" class="mt-1 w-full border border-linec rounded-lg px-3 py-2.5 text-sm bg-cream">
+          </div>
+          <div class="flex gap-2 justify-center no-print" role="group" aria-label="Direction">
+            <button id="jAdd" aria-pressed="true" class="rounded-full px-5 py-2.5 text-sm font-bold bg-terra text-white">+ Add</button>
+            <button id="jSub" aria-pressed="false" class="rounded-full px-5 py-2.5 text-sm font-bold bg-white border border-linec text-ink">− Subtract</button>
+          </div>
+          <div>
+            <label for="jDays" class="text-xs font-bold uppercase tracking-wider text-ink/60">Days</label>
+            <input id="jDays" type="number" min="0" max="1000000" value="30" class="mt-1 w-full border border-linec rounded-lg px-3 py-2.5 text-sm bg-cream">
+          </div>
+        </div>
+        <div class="mt-4 flex flex-wrap justify-center gap-2 no-print" aria-label="Quick jumps">
+          <button class="jQuick rounded-full border border-linec bg-white px-3.5 py-1.5 text-xs font-bold hover:border-terra hover:text-terra" data-n="7">±7</button>
+          <button class="jQuick rounded-full border border-linec bg-white px-3.5 py-1.5 text-xs font-bold hover:border-terra hover:text-terra" data-n="30">±30</button>
+          <button class="jQuick rounded-full border border-linec bg-white px-3.5 py-1.5 text-xs font-bold hover:border-terra hover:text-terra" data-n="90">±90</button>
+          <button class="jQuick rounded-full border border-linec bg-white px-3.5 py-1.5 text-xs font-bold hover:border-terra hover:text-terra" data-n="180">±180</button>
+          <button class="jQuick rounded-full border border-linec bg-white px-3.5 py-1.5 text-xs font-bold hover:border-terra hover:text-terra" data-n="365">±365</button>
+        </div>
+        <div id="jResult" class="mt-6 hidden text-center" aria-live="polite">
+          <div class="text-xs font-bold uppercase tracking-[0.18em] text-ink/50">Resulting date</div>
+          <div id="jDate" class="font-display font-black text-4xl sm:text-5xl text-terra mt-1">–</div>
+          <div id="jDow" class="text-sm font-semibold text-ink/60 mt-1">–</div>
+        </div>
+        <div id="jHint" class="mt-6 text-center text-sm text-ink/50">Choose a base date and a number of days.</div>
+      </div>
+    </div>
+  </section>
+
+<!-- ================= BOTTOM AD ================= -->
+<div class="no-print mx-auto max-w-6xl px-4 sm:px-6 pb-4" role="complementary" aria-label="Advertisement">
+  <div class="mx-auto text-center" style="max-width:300px">
+    <span class="block text-[10px] tracking-[0.18em] uppercase text-slate-400 mb-1.5">Advertisement</span>
+    <div class="flex justify-center overflow-hidden">
+      <script>
+(function(grnp){
+var d = document,
+    s = d.createElement('script'),
+    l = d.currentScript || d.scripts[d.scripts.length - 1];
+s.settings = grnp || {};
+s.src = "\/\/peacefulbicycle.com\/bnXtVJsnd.GElF0oYVWQcY\/Qe\/mf9qu-ZqUtlZk\/PzTHcx1LM\/jWIZwkMTj\/U\/t-NrzmUnyOMsj\/AzydO\/Qx";
+s.async = true;
+s.referrerPolicy = 'no-referrer-when-downgrade';
+l.parentNode.insertBefore(s, l);
+})({})
+</script>
+    </div>
+  </div>
+</div>
+
+<!-- ================= SEO ARTICLE ================= -->
+<section class="mx-auto max-w-4xl px-4 sm:px-6 pb-10">
+  <article id="seo-article" class="bg-white border border-linec rounded-2xl p-6 sm:p-10 shadow-sm">
+    <h2 class="font-display font-extrabold text-3xl text-ink">The Complete Guide to Date Duration Calculations</h2>
+    <p class="text-sm text-ink/50 mt-1">By the DaySpan team · Last updated September 2026</p>
+
+    <h3 class="font-display font-bold text-2xl text-terra mt-8">What a date duration calculator actually does</h3>
+    <p class="mt-3 leading-relaxed">A date duration calculator answers one deceptively simple question: how much time passes between two calendar dates? The answer can be expressed in many units — total days, weeks, months, years, hours, minutes and seconds — and each unit tells a slightly different story. Project managers use day counts to track deadlines, HR teams use them for notice periods and benefit eligibility, travellers use them for visa validity, and curious minds use them to find out exactly how many days old they are. DaySpan computes all of these answers at once, instantly, from a single pair of dates.</p>
+
+    <h3 class="font-display font-bold text-2xl text-terra mt-8">Why counting days is harder than it looks</h3>
+    <p class="mt-3 leading-relaxed">If every month had 30 days and every year had 365, date math would be trivial. Real calendars refuse to cooperate. Months alternate between 28, 29, 30 and 31 days, and the Gregorian calendar inserts an extra day — February 29 — into leap years. A year is a leap year if it is divisible by 4, except for century years, which must also be divisible by 400. That is why 2024 and 2000 were leap years but 1900 was not. Any span that crosses a February 29 contains one more day than a naive 365-day-per-year estimate would suggest, and long spans accumulate several of these leap days. DaySpan counts every February 29 inside your span explicitly, so the total is always calendar-accurate.</p>
+
+    <h3 class="font-display font-bold text-2xl text-terra mt-8">Inclusive versus exclusive: the fencepost problem</h3>
+    <p class="mt-3 leading-relaxed">Ask two people for the days between Monday and Wednesday and you may get two answers: two days or three. Both are defensible. The exclusive count measures the gap — Monday to Wednesday is 2 days — while the inclusive count includes both endpoints, giving 3. Programmers call this the fencepost problem: the number of fence posts is one more than the number of gaps between them. Contracts, hotel bookings and project plans each pick a convention, which is why it matters that a calculator states its convention clearly. DaySpan defaults to the exclusive gap count used by most date libraries, and offers a one-tap toggle to include both the start and end dates when your use case needs it.</p>
+
+    <h3 class="font-display font-bold text-2xl text-terra mt-8">The timezone and daylight-saving trap</h3>
+    <p class="mt-3 leading-relaxed">A surprising number of online calculators get the wrong answer near daylight-saving transitions. The bug is subtle: they convert each date to a local-midnight timestamp and divide the millisecond difference by 86,400,000. On the day clocks spring forward, that "day" is only 23 hours long, so the division yields 0.958 days, which rounds down to zero — an off-by-one error. The robust fix, and the one DaySpan uses, is to perform every calculation in UTC, where every calendar day is exactly 86,400 seconds and daylight saving simply does not exist. UTC-based date math is immune to timezones, DST jumps and the quirks of any particular browser locale, which is why it is the professional standard for date libraries.</p>
+
+    <h3 class="font-display font-bold text-2xl text-terra mt-8">Breaking a span into years, months and days</h3>
+    <p class="mt-3 leading-relaxed">Total days are precise, but "1 year, 2 months and 5 days" is how humans actually think about durations. Converting between the two requires calendar-aware borrowing, much like subtracting multi-digit numbers. You subtract the years, then the months, then the days — and when the day subtraction goes negative, you borrow a month from the end date, adding back however many days that borrowed month actually contained. Borrowing from March gives you 28 or 29 days depending on leap-year status; borrowing from May gives 31. DaySpan performs this borrow correctly for every month, so the breakdown always reconstructs the exact end date when added back to the start.</p>
+
+    <h3 class="font-display font-bold text-2xl text-terra mt-8">Weekends, weekdays and the rhythm of a span</h3>
+    <p class="mt-3 leading-relaxed">A raw day count hides the rhythm of a period. A 30-day span contains either 8 or 10 weekend days depending on where it starts, and that difference matters for staffing, payroll and delivery planning. DaySpan tallies Saturdays and Sundays separately from Monday-to-Friday weekdays, using modular arithmetic on the day of the week rather than slow day-by-day iteration. The result answers practical questions instantly: how many working days are in this quarter, how many weekends fall inside this project phase, and what share of the span is actually time off.</p>
+
+    <h3 class="font-display font-bold text-2xl text-terra mt-8">Reverse answers: seeing a duration from the other side</h3>
+    <p class="mt-3 leading-relaxed">Most calculators answer "how long" and stop. DaySpan also answers the questions you did not know to ask. What percentage of an average year does this span represent? Dividing by 365.25 — the average Gregorian year length — turns an abstract day count into an intuitive share: 182 days is essentially half a year, 91 days is a quarter. How many leap days did the span absorb? That number explains why a "ten-year" span is 3,652 or 3,653 days depending on where it falls. These reverse perspectives turn a single subtraction into genuine insight, which is exactly what a great calculator should do.</p>
+
+    <h3 class="font-display font-bold text-2xl text-terra mt-8">Day-of-week callouts and leap-year status</h3>
+    <p class="mt-3 leading-relaxed">Every date has a personality: the weekday it falls on and whether its year is a leap year. Knowing that your start date was a Sunday and your end date is a Tuesday immediately grounds the numbers — a span that begins and ends on weekends feels different from one spanning the work week. DaySpan derives the weekday for both endpoints using UTC-based day-of-week arithmetic, the same mathematics behind classic mental-calculation algorithms like the Doomsday rule. It also flags leap-year status for each year involved, so you can see at a glance whether February 29 played a role in your result.</p>
+
+    <h3 class="font-display font-bold text-2xl text-terra mt-8">Adding and subtracting days: the date jumper</h3>
+    <p class="mt-3 leading-relaxed">The inverse operation is just as useful as the difference: given a start date, what date lands exactly N days later? This is the math behind payment terms ("net 30"), warranty periods, subscription renewals, medical follow-ups and travel itineraries. Doing it by hand means flipping calendar pages and miscounting month lengths; the date jumper does it in one step, correctly crossing month and year boundaries, including leap days. Subtracting works the same way — count backwards from a deadline to find the latest safe start date.</p>
+
+    <h3 class="font-display font-bold text-2xl text-terra mt-8">Milestone math: the famous 10,000 days</h3>
+    <p class="mt-3 leading-relaxed">Round-number milestones have a special charm. Reaching 10,000 days old — roughly 27 years and 4 months — is a once-in-a-lifetime date worth celebrating, and the same arithmetic powers wedding anniversaries measured in days, "1,000 days since launch" company milestones and sobriety counters. The calculation is simple addition on the calendar, but the delight is in the answer: an exact future date, its weekday, and a countdown of how many days remain. DaySpan's milestone mode also shows your progress as a percentage, turning a distant date into a journey you can watch unfold.</p>
+
+    <h3 class="font-display font-bold text-2xl text-terra mt-8">Real-world uses for precise date durations</h3>
+    <p class="mt-3 leading-relaxed">Accurate day counts quietly power large parts of modern life. In project management, dependencies and critical paths are measured in working days, and a miscounted weekend can shift a launch. In HR and payroll, notice periods, probation lengths and leave accruals are defined in calendar or business days, and disputes often hinge on a single day. In medicine, pregnancy is tracked as 280 days from the last menstrual period, and medication schedules depend on exact intervals. In finance, interest accrues per day under day-count conventions, and bond maturities are set years ahead. In law, filing deadlines and statutes of limitation are unforgiving of arithmetic slips. In travel, visa-free stays are counted in days, and overstaying by one can mean fines or bans. A trustworthy calculator earns its place by being right in every one of these contexts.</p>
+
+    <h3 class="font-display font-bold text-2xl text-terra mt-8">How DaySpan computes your answer</h3>
+    <p class="mt-3 leading-relaxed">Every DaySpan calculation follows three principles. First, all date math happens in UTC, so timezones and daylight-saving transitions can never corrupt the result. Second, month and year breakdowns use true calendar arithmetic with correct borrowing, not the rough 30.44-day average month. Third, everything runs instantly and entirely in your browser — your dates are never sent to a server, stored, or tracked. Type two dates and the dashboard updates live: total days, weeks, the calendar breakdown, weekend and weekday tallies, leap days in the span, the span's share of an average year, and day-of-week plus leap-year callouts for both endpoints. No signup, no paywall, no watermark — just the answer, as many times as you need it.</p>
+  </article>
+
+  <!-- FAQs -->
+  <div class="mt-10">
+    <h2 class="font-display font-extrabold text-3xl text-ink text-center">Frequently asked questions</h2>
+    <div class="mt-6 space-y-3 max-w-3xl mx-auto">
+      <details class="faq-item bg-white border border-linec rounded-xl overflow-hidden">
+        <summary class="cursor-pointer px-5 py-4 flex items-center justify-between gap-4 font-bold text-ink list-none">
+          <span>How does DaySpan count the days between two dates?</span>
+          <svg class="faq-chev shrink-0 text-terra" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+        </summary>
+        <div class="px-5 pb-5 text-sm leading-relaxed text-ink/75">DaySpan counts the exclusive gap between the two dates: the number of midnights from the start date up to, but not including, the end date. So Monday to Wednesday is 2 days. If your use case needs both endpoints counted — common for bookings and leave requests — tick "Count both start and end dates" and DaySpan adds one. The order does not matter: entering the later date first gives the same result.</div>
+      </details>
+      <details class="faq-item bg-white border border-linec rounded-xl overflow-hidden">
+        <summary class="cursor-pointer px-5 py-4 flex items-center justify-between gap-4 font-bold text-ink list-none">
+          <span>Why do different date calculators sometimes disagree by one day?</span>
+          <svg class="faq-chev shrink-0 text-terra" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+        </summary>
+        <div class="px-5 pb-5 text-sm leading-relaxed text-ink/75">Almost always, the culprit is timezone or daylight-saving handling. Calculators that convert dates to local-midnight timestamps and divide by 86,400,000 milliseconds lose or gain an hour on DST transition days, and rounding turns that hour into a missing or extra day. DaySpan avoids this entirely by doing all date math in UTC, where every calendar day is exactly 24 hours. A one-day disagreement can also come from the inclusive-versus-exclusive convention, which DaySpan lets you toggle explicitly.</div>
+      </details>
+      <details class="faq-item bg-white border border-linec rounded-xl overflow-hidden">
+        <summary class="cursor-pointer px-5 py-4 flex items-center justify-between gap-4 font-bold text-ink list-none">
+          <span>How are leap years handled in the calculation?</span>
+          <svg class="faq-chev shrink-0 text-terra" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+        </summary>
+        <div class="px-5 pb-5 text-sm leading-relaxed text-ink/75">DaySpan uses the full Gregorian rule: a year is a leap year if divisible by 4, except century years, which must be divisible by 400 — so 2024 qualifies but 1900 does not. Every February 29 falling inside your span is counted individually and shown as "Leap days in span." Both endpoint dates also get a leap-year callout, so you can see at a glance whether a leap day influenced your result.</div>
+      </details>
+      <details class="faq-item bg-white border border-linec rounded-xl overflow-hidden">
+        <summary class="cursor-pointer px-5 py-4 flex items-center justify-between gap-4 font-bold text-ink list-none">
+          <span>How is the "years, months, days" breakdown calculated?</span>
+          <svg class="faq-chev shrink-0 text-terra" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+        </summary>
+        <div class="px-5 pb-5 text-sm leading-relaxed text-ink/75">DaySpan uses calendar-aware subtraction with borrowing. It subtracts years, then months, then days; when the day subtraction goes negative it borrows one month from the end date and adds that month's true length (28, 29, 30 or 31 days). This means adding the breakdown back to the start date always reconstructs the end date exactly — unlike rough estimates based on a 30.44-day average month.</div>
+      </details>
+      <details class="faq-item bg-white border border-linec rounded-xl overflow-hidden">
+        <summary class="cursor-pointer px-5 py-4 flex items-center justify-between gap-4 font-bold text-ink list-none">
+          <span>What does "this span is X% of an average year" mean?</span>
+          <svg class="faq-chev shrink-0 text-terra" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+        </summary>
+        <div class="px-5 pb-5 text-sm leading-relaxed text-ink/75">It expresses your day count as a share of 365.25 days — the average length of a Gregorian calendar year, accounting for leap years. A 182-day span reads as roughly 50% of a year, and 91 days as about 25%. It is a "reverse answer": instead of asking how long the span is, it tells you how big the span feels relative to a year you already understand.</div>
+      </details>
+      <details class="faq-item bg-white border border-linec rounded-xl overflow-hidden">
+        <summary class="cursor-pointer px-5 py-4 flex items-center justify-between gap-4 font-bold text-ink list-none">
+          <span>Is my data private? Do I need an account?</span>
+          <svg class="faq-chev shrink-0 text-terra" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+        </summary>
+        <div class="px-5 pb-5 text-sm leading-relaxed text-ink/75">Yes, completely. DaySpan runs 100% in your browser: every calculation happens locally in JavaScript and your dates are never sent to any server. There is no signup, no paywall and no watermark. Your recent calculations are stored only in your own browser's local storage, and you can clear them any time by clearing site data.</div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ================= JSON-LD ================= -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    { "@type": "Question", "name": "How does DaySpan count the days between two dates?", "acceptedAnswer": { "@type": "Answer", "text": "DaySpan counts the exclusive gap between the two dates: the number of midnights from the start date up to, but not including, the end date. An optional toggle counts both endpoints. Date order does not matter." } },
+    { "@type": "Question", "name": "Why do different date calculators sometimes disagree by one day?", "acceptedAnswer": { "@type": "Answer", "text": "The usual cause is timezone or daylight-saving handling in calculators that divide local-midnight timestamps by 86400000 milliseconds. DaySpan performs all date math in UTC, where every calendar day is exactly 24 hours, eliminating this error." } },
+    { "@type": "Question", "name": "How are leap years handled in the calculation?", "acceptedAnswer": { "@type": "Answer", "text": "DaySpan uses the Gregorian rule: a year is a leap year if divisible by 4, except century years which must be divisible by 400. Every February 29 inside the span is counted and shown separately." } },
+    { "@type": "Question", "name": "How is the years, months, days breakdown calculated?", "acceptedAnswer": { "@type": "Answer", "text": "DaySpan uses calendar-aware subtraction with borrowing: when the day subtraction goes negative it borrows one month from the end date and adds that month's true length, so the breakdown always reconstructs the end date exactly." } },
+    { "@type": "Question", "name": "What does this span is X% of an average year mean?", "acceptedAnswer": { "@type": "Answer", "text": "It expresses the day count as a share of 365.25 days, the average Gregorian year length. A 182-day span is roughly 50% of a year; 91 days is about 25%." } },
+    { "@type": "Question", "name": "Is my data private? Do I need an account?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. DaySpan runs entirely in your browser with no server calls, no signup, no paywall and no watermark. Recent calculations are stored only in your browser's local storage." } }
+  ]
+}
+</script>
+
+<!-- ================= FOOTER ================= -->
+<footer class="border-t border-linec bg-parch/60">
+  <div class="mx-auto max-w-6xl px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+    <div class="flex items-center gap-2">
+      <span class="font-display font-extrabold text-xl text-terra">DaySpan</span>
+      <span class="text-xs text-ink/50">· Free date duration calculator</span>
+    </div>
+    <nav class="flex items-center gap-5 text-sm font-semibold" aria-label="Footer navigation">
+      <a href="#top" class="text-ink/70 hover:text-terra">Home</a>
+      <a href="https://fixoraa.tech" class="text-ink/70 hover:text-terra">More Tools</a>
+    </nav>
+  </div>
+  <div class="text-center text-xs text-ink/40 pb-6">All calculations happen in your browser. Dates are never uploaded or stored on any server.</div>
+<p class="fx-credit" style="text-align:center;font-size:12.5px;opacity:.62;margin:10px auto 2px;letter-spacing:.01em">Made by <a href="https://fixoraa.tech" target="_blank" rel="noopener" style="color:inherit;font-weight:700;text-decoration:underline;text-underline-offset:2px">Fixoraa</a></p>
+</footer>
+
+<script>
+/*__PURE_START__*/
+/* DaySpan pure date logic — no DOM access. All math in UTC to avoid timezone/DST off-by-one errors. */
+var MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+var MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+var DOW_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+var DAY_MS = 86400000;
+
+function isLeapYear(y) {
+  return (y % 4 === 0 && y % 100 !== 0) || (y % 400 === 0);
+}
+function daysInMonth(y, m0) { /* m0: 0-indexed month */
+  return new Date(Date.UTC(y, m0 + 1, 0)).getUTCDate();
+}
+function parseDate(str) { /* 'YYYY-MM-DD' -> {y,m,d} (m 0-indexed) or null */
+  if (typeof str !== 'string') return null;
+  var m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(str.trim());
+  if (!m) return null;
+  var y = parseInt(m[1], 10), mo = parseInt(m[2], 10), d = parseInt(m[3], 10);
+  if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+  if (d > daysInMonth(y, mo - 1)) return null;
+  return { y: y, m: mo - 1, d: d };
+}
+function toUTCms(p) { return Date.UTC(p.y, p.m, p.d); }
+function pad2(n) { return (n < 10 ? '0' : '') + n; }
+function msToISO(ms) {
+  var dt = new Date(ms);
+  return dt.getUTCFullYear() + '-' + pad2(dt.getUTCMonth() + 1) + '-' + pad2(dt.getUTCDate());
+}
+function dayOfWeekIndex(p) { return new Date(toUTCms(p)).getUTCDay(); }
+function dayOfWeekName(p) { return DOW_NAMES[dayOfWeekIndex(p)]; }
+function orderedPair(aStr, bStr) { /* returns [startMs, endMs] with start <= end, or null */
+  var pa = parseDate(aStr), pb = parseDate(bStr);
+  if (!pa || !pb) return null;
+  var sa = toUTCms(pa), sb = toUTCms(pb);
+  return sa <= sb ? [sa, sb] : [sb, sa];
+}
+function daysBetween(aStr, bStr) { /* exclusive gap, absolute; NaN on invalid */
+  var pr = orderedPair(aStr, bStr);
+  if (!pr) return NaN;
+  return Math.round((pr[1] - pr[0]) / DAY_MS);
+}
+function fullBreakdown(aStr, bStr) { /* calendar-accurate {years, months, days} or null */
+  var pa = parseDate(aStr), pb = parseDate(bStr);
+  if (!pa || !pb) return null;
+  var s = pa, e = pb;
+  if (toUTCms(s) > toUTCms(e)) { s = pb; e = pa; }
+  var eMs = toUTCms(e);
+  /* count whole months by advancing the start date (clamping day to month length) */
+  var y = s.y, m = s.m, totalMonths = 0;
+  for (;;) {
+    var nm = m + 1, ny = y;
+    if (nm > 11) { nm = 0; ny = y + 1; }
+    var cand = Date.UTC(ny, nm, Math.min(s.d, daysInMonth(ny, nm)));
+    if (cand > eMs) break;
+    y = ny; m = nm; totalMonths++;
+  }
+  var advMs = Date.UTC(y, m, Math.min(s.d, daysInMonth(y, m)));
+  var days = Math.round((eMs - advMs) / DAY_MS);
+  return { years: Math.floor(totalMonths / 12), months: totalMonths % 12, days: days };
+}
+function weekendCount(aStr, bStr, inclusive) { /* {saturdays, sundays, weekends, weekdays, totalDays} or null */
+  var pr = orderedPair(aStr, bStr);
+  if (!pr) return null;
+  var endEx = inclusive ? pr[1] + DAY_MS : pr[1];
+  var total = Math.round((endEx - pr[0]) / DAY_MS);
+  if (total <= 0) return { saturdays: 0, sundays: 0, weekends: 0, weekdays: 0, totalDays: 0 };
+  var startDow = new Date(pr[0]).getUTCDay();
+  var fullWeeks = Math.floor(total / 7), rem = total % 7;
+  var sat = fullWeeks, sun = fullWeeks;
+  for (var i = 0; i < rem; i++) {
+    var dow = (startDow + i) % 7;
+    if (dow === 6) sat++;
+    else if (dow === 0) sun++;
+  }
+  return { saturdays: sat, sundays: sun, weekends: sat + sun, weekdays: total - sat - sun, totalDays: total };
+}
+function leapDaysInSpan(aStr, bStr, inclusive) { /* count of Feb 29 in [start, end) — or [start, end] if inclusive; null on invalid */
+  var pr = orderedPair(aStr, bStr);
+  if (!pr) return null;
+  var pa = parseDate(aStr), pb = parseDate(bStr);
+  var endEx = inclusive ? pr[1] + DAY_MS : pr[1];
+  var y0 = Math.min(pa.y, pb.y), y1 = Math.max(pa.y, pb.y), count = 0;
+  for (var y = y0; y <= y1; y++) {
+    if (!isLeapYear(y)) continue;
+    var feb29 = Date.UTC(y, 1, 29);
+    if (feb29 >= pr[0] && feb29 < endEx) count++;
+  }
+  return count;
+}
+function percentOfYear(totalDays) { /* span as % of average Gregorian year (365.25d), 2dp */
+  if (!isFinite(totalDays) || totalDays < 0) return NaN;
+  return Math.round((totalDays / 365.25) * 10000) / 100;
+}
+function milestoneDate(birthStr, n) { /* {date, dow, leapYear} or null */
+  var p = parseDate(birthStr);
+  if (!p || !isFinite(n)) return null;
+  n = Math.floor(Math.abs(n));
+  var ms = toUTCms(p) + n * DAY_MS;
+  var iso = msToISO(ms);
+  var dt = new Date(ms);
+  return { date: iso, dow: DOW_NAMES[dt.getUTCDay()], leapYear: isLeapYear(dt.getUTCFullYear()), n: n };
+}
+function milestoneProgress(birthStr, n, todayStr) { /* progress toward milestone; null on invalid */
+  var res = milestoneDate(birthStr, n);
+  if (!res) return null;
+  var out = { target: res, livedDays: null, remainingDays: null, percent: null, passed: false };
+  var t = todayStr ? parseDate(todayStr) : null;
+  if (!t) return out;
+  var p = parseDate(birthStr);
+  var targetMs = Date.UTC(+res.date.slice(0, 4), +res.date.slice(5, 7) - 1, +res.date.slice(8, 10));
+  var lived = Math.max(0, Math.round((toUTCms(t) - toUTCms(p)) / DAY_MS));
+  var remaining = Math.round((targetMs - toUTCms(t)) / DAY_MS);
+  out.livedDays = lived;
+  out.remainingDays = remaining;
+  out.percent = Math.min(100, Math.max(0, Math.round((lived / res.n) * 1000) / 10));
+  out.passed = remaining < 0;
+  return out;
+}
+function addDays(dateStr, n) { /* {date, dow, leapYear} or null */
+  var p = parseDate(dateStr);
+  if (!p || !isFinite(n)) return null;
+  n = Math.trunc(n);
+  var ms = toUTCms(p) + n * DAY_MS;
+  var iso = msToISO(ms);
+  var dt = new Date(ms);
+  return { date: iso, dow: DOW_NAMES[dt.getUTCDay()], leapYear: isLeapYear(dt.getUTCFullYear()) };
+}
+function parseTime(str) { /* 'HH:MM' -> {h, mi} or null */
+  if (typeof str !== 'string') return null;
+  var m = /^(\d{1,2}):(\d{2})$/.exec(str.trim());
+  if (!m) return null;
+  var h = +m[1], mi = +m[2];
+  if (h > 23 || mi > 59) return null;
+  return { h: h, mi: mi };
+}
+function preciseDuration(aStr, aTime, bStr, bTime) { /* with times-of-day; {days,hours,minutes,seconds,totalHours} or null */
+  var pa = parseDate(aStr), pb = parseDate(bStr);
+  if (!pa || !pb) return null;
+  var ta = parseTime(aTime) || { h: 0, mi: 0 };
+  var tb = parseTime(bTime) || { h: 0, mi: 0 };
+  var sa = Date.UTC(pa.y, pa.m, pa.d, ta.h, ta.mi);
+  var sb = Date.UTC(pb.y, pb.m, pb.d, tb.h, tb.mi);
+  if (sa > sb) { var t = sa; sa = sb; sb = t; }
+  var diff = sb - sa;
+  var days = Math.floor(diff / DAY_MS); diff -= days * DAY_MS;
+  var hours = Math.floor(diff / 3600000); diff -= hours * 3600000;
+  var minutes = Math.floor(diff / 60000); diff -= minutes * 60000;
+  var seconds = Math.floor(diff / 1000);
+  return { days: days, hours: hours, minutes: minutes, seconds: seconds };
+}
+function validateDates(aStr, bStr) {
+  var pa = parseDate(aStr), pb = parseDate(bStr);
+  if (!aStr && !bStr) return '';
+  if (!pa && aStr) return 'Start date is not a valid calendar date.';
+  if (!pb && bStr) return 'End date is not a valid calendar date.';
+  return '';
+}
+function formatLong(isoStr) { /* '2026-09-29' -> '29 Sep 2026' */
+  var p = parseDate(isoStr);
+  if (!p) return '';
+  return p.d + ' ' + MONTH_SHORT[p.m] + ' ' + p.y;
+}
+function fmtNum(n) {
+  if (!isFinite(n)) return '–';
+  return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+function summaryText(r) { /* copyable plain-text summary from a result object */
+  if (!r) return '';
+  var lines = [];
+  lines.push('DaySpan — date duration summary');
+  lines.push(r.aLabel + ' (' + r.aDow + ')  →  ' + r.bLabel + ' (' + r.bDow + ')' + (r.inclusive ? '  [inclusive]' : ''));
+  lines.push('Total: ' + fmtNum(r.totalDays) + ' days');
+  lines.push('= ' + r.brk.years + ' years, ' + r.brk.months + ' months, ' + r.brk.days + ' days');
+  lines.push('= ' + fmtNum(r.weeks) + ' weeks and ' + r.weeksRem + ' days');
+  lines.push('Weekends: ' + fmtNum(r.wc.weekends) + ' days (' + r.wc.saturdays + ' Sat + ' + r.wc.sundays + ' Sun) · Weekdays: ' + fmtNum(r.wc.weekdays));
+  lines.push('Leap days in span: ' + r.leapDays + ' · ' + r.pctYear + '% of an average year');
+  if (r.precise) lines.push('Precise: ' + r.precise.days + 'd ' + r.precise.hours + 'h ' + r.precise.minutes + 'm ' + r.precise.seconds + 's');
+  return lines.join('\n');
+}
+/*__PURE_END__*/
+
+/* ================= UI WIRING (DOM) ================= */
+(function () {
+  'use strict';
+  function $(id) { return document.getElementById(id); }
+  var RECENT_KEY = 'dayspan-recent-v1';
+  var lastResult = null;
+
+  /* ---------- tabs ---------- */
+  var tabs = ['duration', 'milestone', 'jumper'];
+  tabs.forEach(function (name) {
+    $('tab-' + name).addEventListener('click', function () {
+      tabs.forEach(function (n) {
+        $('tab-' + n).setAttribute('aria-selected', n === name ? 'true' : 'false');
+        $('panel-' + n).classList.toggle('hidden', n !== name);
+      });
+    });
+  });
+
+  /* ---------- calendar page cards ---------- */
+  function paintCalCard(prefix, iso) {
+    var p = parseDate(iso);
+    if (!p) {
+      $(prefix + 'Cap').textContent = prefix === 'start' ? 'Start month' : 'End month';
+      $(prefix + 'Big').textContent = '–';
+      $(prefix + 'Dow').textContent = prefix === 'start' ? 'Pick a start date' : 'Pick an end date';
+      $(prefix + 'Leap').textContent = '';
+      return;
+    }
+    $(prefix + 'Cap').textContent = MONTH_NAMES[p.m] + ' ' + p.y;
+    $(prefix + 'Big').textContent = p.d;
+    $(prefix + 'Dow').textContent = dayOfWeekName(p);
+    $(prefix + 'Leap').textContent = p.y + (isLeapYear(p.y) ? ' is a leap year' : ' is not a leap year');
+  }
+
+  function currentResult() { return lastResult; }
+
+  /* ---------- main recalculation (live) ---------- */
+  function recalc() {
+    var a = $('dateStart').value, b = $('dateEnd').value;
+    paintCalCard('start', a);
+    paintCalCard('end', b);
+    var err = validateDates(a, b);
+    if (!a || !b || err || !parseDate(a) || !parseDate(b)) {
+      $('bigRange').textContent = err || 'Awaiting two dates';
+      $('bigDays').textContent = '0';
+      $('bigSub').textContent = err || 'Pick a start and an end date above — the answer appears instantly.';
+      $('preciseLine').classList.add('hidden');
+      $('ticketGrid').classList.add('hidden');
+      $('btnCopy').disabled = true;
+      lastResult = null;
+      return;
+    }
+    var inclusive = $('chkInclusive').checked;
+    var pr = orderedPair(a, b);
+    var total = daysBetween(a, b) + (inclusive ? 1 : 0);
+    var brk = fullBreakdown(a, b);
+    var wc = weekendCount(a, b, inclusive);
+    var leap = leapDaysInSpan(a, b, inclusive);
+    var pct = percentOfYear(total);
+    var pa = parseDate(a), pb = parseDate(b);
+    var weeks = Math.floor(total / 7), weeksRem = total % 7;
+    var precise = null;
+    if ($('chkTimes').checked) {
+      precise = preciseDuration(a, $('timeStart').value, b, $('timeEnd').value);
+    }
+    var swapped = toUTCms(pa) > toUTCms(pb);
+    var first = swapped ? b : a, second = swapped ? a : b;
+    var r = {
+      aLabel: formatLong(first), bLabel: formatLong(second),
+      aDow: dayOfWeekName(parseDate(first)), bDow: dayOfWeekName(parseDate(second)),
+      totalDays: total, inclusive: inclusive, brk: brk, wc: wc,
+      leapDays: leap, pctYear: pct, weeks: weeks, weeksRem: weeksRem, precise: precise
+    };
+    lastResult = r;
+
+    $('bigRange').textContent = r.aLabel + '  →  ' + r.bLabel;
+    $('bigDays').textContent = fmtNum(total);
+    var bits = [];
+    if (brk.years) bits.push(brk.years + (brk.years === 1 ? ' year' : ' years'));
+    if (brk.months) bits.push(brk.months + (brk.months === 1 ? ' month' : ' months'));
+    if (brk.days || !bits.length) bits.push(brk.days + (brk.days === 1 ? ' day' : ' days'));
+    $('bigSub').textContent = 'That is ' + bits.join(', ') + (inclusive ? ' (both endpoints counted).' : '.');
+    if (precise && (precise.hours || precise.minutes || precise.seconds || $('timeStart').value || $('timeEnd').value)) {
+      $('preciseLine').textContent = 'Precise: ' + precise.days + 'd ' + precise.hours + 'h ' + precise.minutes + 'm ' + precise.seconds + 's';
+      $('preciseLine').classList.remove('hidden');
+    } else {
+      $('preciseLine').classList.add('hidden');
+    }
+    /* tickets */
+    $('ticketGrid').classList.remove('hidden');
+    $('tBreakdown').textContent = brk.years + 'y ' + brk.months + 'm ' + brk.days + 'd';
+    $('tBreakdownSub').textContent = 'calendar-accurate' + (swapped ? ' · dates auto-ordered' : '');
+    $('tWeeks').textContent = fmtNum(weeks) + ' wks';
+    $('tWeeksSub').textContent = '+ ' + weeksRem + ' leftover day' + (weeksRem === 1 ? '' : 's');
+    $('tWeekends').textContent = fmtNum(wc.weekends);
+    $('tWeekendsSub').textContent = wc.saturdays + ' Saturdays + ' + wc.sundays + ' Sundays';
+    $('tWeekdays').textContent = fmtNum(wc.weekdays);
+    $('tWeekdaysSub').textContent = 'Monday – Friday in span';
+    $('tLeap').textContent = leap;
+    $('tLeapSub').textContent = leap === 1 ? 'one Feb 29 inside this span' : 'Feb 29 occurrences counted';
+    $('tPct').textContent = pct + '%';
+    $('tPctSub').textContent = 'of a 365.25-day average year';
+    $('btnCopy').disabled = false;
+    saveRecent(a, b, total);
+  }
+
+  ['dateStart', 'dateEnd', 'timeStart', 'timeEnd'].forEach(function (id) {
+    $(id).addEventListener('input', recalc);
+    $(id).addEventListener('change', recalc);
+  });
+  $('chkInclusive').addEventListener('change', recalc);
+  $('chkTimes').addEventListener('change', function () {
+    $('timeRow').classList.toggle('hidden', !this.checked);
+    $('timeRow').classList.toggle('grid', this.checked);
+    recalc();
+  });
+  $('btnSwap').addEventListener('click', function () {
+    var s = $('dateStart').value;
+    $('dateStart').value = $('dateEnd').value;
+    $('dateEnd').value = s;
+    recalc();
+  });
+  $('btnToday').addEventListener('click', function () {
+    $('dateEnd').value = msToISO(Date.now());
+    recalc();
+  });
+
+  /* ---------- copy summary ---------- */
+  $('btnCopy').addEventListener('click', function () {
+    var r = currentResult();
+    if (!r) return;
+    var text = summaryText(r);
+    function done() {
+      $('copyMsg').textContent = 'Copied to clipboard ✓';
+      setTimeout(function () { $('copyMsg').textContent = ''; }, 2500);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () { fallbackCopy(text); done(); });
+    } else { fallbackCopy(text); done(); }
+  });
+  function fallbackCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(ta);
+  }
+
+  /* ---------- recent calculations (localStorage) ---------- */
+  function loadRecent() {
+    try { return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); }
+    catch (e) { return []; }
+  }
+  function saveRecent(a, b, total) {
+    try {
+      var list = loadRecent().filter(function (e) { return !(e.a === a && e.b === b); });
+      list.unshift({ a: a, b: b, total: total });
+      localStorage.setItem(RECENT_KEY, JSON.stringify(list.slice(0, 8)));
+      renderRecent();
+    } catch (e) {}
+  }
+  function renderRecent() {
+    var list = loadRecent();
+    $('recentWrap').classList.toggle('hidden', !list.length);
+    var wrap = $('recentList');
+    wrap.innerHTML = '';
+    list.forEach(function (e) {
+      var btn = document.createElement('button');
+      btn.className = 'text-xs font-semibold border border-linec bg-white rounded-full px-3 py-1.5 hover:border-terra hover:text-terra transition-colors';
+      btn.textContent = formatLong(e.a) + ' → ' + formatLong(e.b) + ' · ' + fmtNum(e.total) + 'd';
+      btn.addEventListener('click', function () {
+        $('dateStart').value = e.a; $('dateEnd').value = e.b; recalc();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+      wrap.appendChild(btn);
+    });
+  }
+
+  /* ---------- milestone mode ---------- */
+  var msN = 10000;
+  function paintPreset() {
+    document.querySelectorAll('.msPreset').forEach(function (btn) {
+      var on = +btn.dataset.n === msN && !$('msCustom').value;
+      btn.classList.toggle('bg-terra', on);
+      btn.classList.toggle('text-white', on);
+      btn.classList.toggle('border-terra', on);
+      btn.classList.toggle('bg-white', !on);
+    });
+  }
+  function recalcMilestone() {
+    paintPreset();
+    var birth = $('msBirth').value;
+    var custom = parseInt($('msCustom').value, 10);
+    var n = isFinite(custom) && custom > 0 ? custom : msN;
+    if (!parseDate(birth)) {
+      $('msResult').classList.add('hidden');
+      $('msHint').classList.remove('hidden');
+      return;
+    }
+    var todayISO = msToISO(Date.now());
+    var mp = milestoneProgress(birth, n, todayISO);
+    $('msResult').classList.remove('hidden');
+    $('msHint').classList.add('hidden');
+    $('msBig').textContent = fmtNum(n) + ' days old';
+    $('msDate').textContent = formatLong(mp.target.date);
+    $('msDow').textContent = mp.target.dow + (mp.target.leapYear ? ' · a leap year' : '');
+    $('msPct').textContent = mp.percent + '%';
+    $('msBar').style.width = mp.percent + '%';
+    $('msRemain').textContent = mp.passed
+      ? 'Already passed — that was ' + fmtNum(-mp.remainingDays) + ' days ago.'
+      : mp.remainingDays === 0
+        ? 'Today is the day — celebrate!'
+        : fmtNum(mp.remainingDays) + ' days to go (' + fmtNum(mp.livedDays) + ' lived so far).';
+  }
+  document.querySelectorAll('.msPreset').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      msN = +btn.dataset.n;
+      $('msCustom').value = '';
+      recalcMilestone();
+    });
+  });
+  $('msBirth').addEventListener('input', recalcMilestone);
+  $('msBirth').addEventListener('change', recalcMilestone);
+  $('msCustom').addEventListener('input', recalcMilestone);
+
+  /* ---------- date jumper ---------- */
+  var jDir = 1;
+  function recalcJumper() {
+    var base = $('jBase').value;
+    var n = parseInt($('jDays').value, 10);
+    if (!parseDate(base) || !isFinite(n)) {
+      $('jResult').classList.add('hidden');
+      $('jHint').classList.remove('hidden');
+      return;
+    }
+    var res = addDays(base, jDir * Math.abs(n));
+    $('jResult').classList.remove('hidden');
+    $('jHint').classList.add('hidden');
+    $('jDate').textContent = formatLong(res.date);
+    $('jDow').textContent = res.dow + (res.leapYear ? ' · leap year' : '');
+  }
+  function paintJDir() {
+    $('jAdd').className = 'rounded-full px-5 py-2.5 text-sm font-bold ' + (jDir === 1 ? 'bg-terra text-white' : 'bg-white border border-linec text-ink');
+    $('jSub').className = 'rounded-full px-5 py-2.5 text-sm font-bold ' + (jDir === -1 ? 'bg-terra text-white' : 'bg-white border border-linec text-ink');
+    $('jAdd').setAttribute('aria-pressed', jDir === 1 ? 'true' : 'false');
+    $('jSub').setAttribute('aria-pressed', jDir === -1 ? 'true' : 'false');
+  }
+  $('jAdd').addEventListener('click', function () { jDir = 1; paintJDir(); recalcJumper(); });
+  $('jSub').addEventListener('click', function () { jDir = -1; paintJDir(); recalcJumper(); });
+  document.querySelectorAll('.jQuick').forEach(function (btn) {
+    btn.addEventListener('click', function () { $('jDays').value = btn.dataset.n; recalcJumper(); });
+  });
+  $('jBase').addEventListener('input', recalcJumper);
+  $('jBase').addEventListener('change', recalcJumper);
+  $('jDays').addEventListener('input', recalcJumper);
+
+  /* ---------- init ---------- */
+  renderRecent();
+  recalc();
+})();
+</script>
+</body>
+</html>

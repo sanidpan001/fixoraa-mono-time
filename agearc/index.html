@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="canonical" href="https://time.fixoraa.tech/agearc//">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgeArc — Free Age Calculator: Exact Age, Birthday Countdown &amp; Vedic Rashi</title>
+<meta name="description" content="AgeArc is a free online age calculator. Get your exact age in years, months and days, age on any past or future date, a live next-birthday countdown, total days lived, and your approximate Vedic rashi. No signup, unlimited free use.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;1,500;1,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: { cream: '#FAF7F0', parchment: '#FFFDF9', ink: '#1C1917', maroon: '#881337', clay: '#57534E' },
+      fontFamily: { serif: ['"Playfair Display"', 'Georgia', 'serif'], sans: ['Inter', 'system-ui', 'sans-serif'] }
+    }
+  }
+}
+</script>
+<style>
+  body { background:#FAF7F0; color:#1C1917; }
+  @media print { .no-print { display:none !important; } }
+  .hairline { border-color: rgba(28,25,23,.16); }
+  .timeline-rail { position:relative; }
+  .timeline-rail::before { content:''; position:absolute; left:11px; top:8px; bottom:8px; width:2px; background:linear-gradient(#881337,#88133733); }
+  .tl-node { position:relative; }
+  .tl-node::before { content:''; position:absolute; left:4px; top:26px; width:16px; height:16px; border-radius:9999px; background:#FAF7F0; border:3px solid #881337; }
+  .tl-node.done::before { background:#881337; }
+  .dropcap::first-letter { font-family:'Playfair Display',Georgia,serif; font-weight:700; font-size:3.2em; float:left; line-height:.85; padding-right:.12em; color:#881337; }
+  input[type="date"] { color-scheme: light; }
+  .num-serif { font-family:'Playfair Display',Georgia,serif; font-variant-numeric: tabular-nums; }
+  @keyframes pulse-soft { 0%,100%{opacity:1} 50%{opacity:.55} }
+  .tick-dot { animation: pulse-soft 1s infinite; }
+</style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "How does AgeArc calculate my exact age in years, months and days?",
+      "acceptedAnswer": { "@type": "Answer", "text": "AgeArc compares your date of birth with the target date using real calendar rules. It first takes the difference in years, then adjusts months and days by borrowing days from the actual previous month, so leap years and varying month lengths are handled correctly. For example, someone born on 15 May 1990 is exactly 36 years, 4 months and 12 days old on 27 September 2026." }
+    },
+    {
+      "@type": "Question",
+      "name": "What happens if I was born on February 29, a leap day?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Leap-day births are handled explicitly. In non-leap years AgeArc observes your birthday on 1 March, which is the most common legal convention. Your age, next-birthday countdown and milestone timeline all respect this rule, and if you were born on 29 February the timeline also shows your next true 29 February birthday." }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I calculate my age on a past or future date?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Yes. Use the 'Age as of' field to pick any date, past or future. This is useful for checking eligibility for school admissions, exams, retirement, or simply finding out how old you were on a memorable day or will be on an upcoming one." }
+    },
+    {
+      "@type": "Question",
+      "name": "What is Vedic rashi, and how is it different from my zodiac sign?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Your Western zodiac sign is based on the tropical Sun position. Vedic rashi traditionally refers to the Moon's position at birth in the sidereal zodiac, which is why it matters in Indian astrology for marriage matching and naming. AgeArc approximates your rashi from your birth date using the sidereal Sun-sign date ranges, which is a widely used simplification." }
+    },
+    {
+      "@type": "Question",
+      "name": "Is the Vedic rashi shown on AgeArc exact?",
+      "acceptedAnswer": { "@type": "Answer", "text": "It is an approximation. A true Vedic Moon-sign rashi requires your exact birth time and birthplace for a full chart calculation. The rashi shown here uses the sidereal Sun-sign ranges for your birth date, which matches for many people but can differ near sign boundaries. Treat it as a starting point, not a substitute for a proper kundli." }
+    },
+    {
+      "@type": "Question",
+      "name": "Is my date of birth stored or sent to any server?",
+      "acceptedAnswer": { "@type": "Answer", "text": "No. AgeArc runs entirely in your browser. Your date of birth is optionally remembered on your own device using localStorage so you do not have to re-enter it, and nothing is ever uploaded or sent to any server." }
+    }
+  ]
+}
+</script>
+</head>
+<body id="top" class="font-sans antialiased">
+
+<!-- ============ HEADER ============ -->
+<header class="sticky top-0 z-40 bg-cream/95 backdrop-blur border-b hairline">
+  <div class="mx-auto max-w-6xl px-4 sm:px-6 h-16 flex items-center justify-between">
+    <a href="#top" class="font-serif text-2xl font-bold tracking-tight">Age<span class="text-maroon">Arc</span><span class="text-maroon">.</span></a>
+    <nav class="flex items-center gap-6 text-sm font-medium">
+      <a href="#top" class="hover:text-maroon transition-colors">Home</a>
+      <a href="https://fixoraa.tech" class="hover:text-maroon transition-colors">More Tools</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ============ HERO ============ -->
+<section class="mx-auto max-w-6xl px-4 sm:px-6 pt-10 sm:pt-14 pb-6">
+  <p class="text-[11px] tracking-[0.3em] uppercase text-maroon font-semibold mb-4">The Editorial Age Calculator</p>
+  <h1 class="font-serif text-4xl sm:text-6xl font-bold leading-[1.05] tracking-tight max-w-3xl">Every life,<br>measured in <em class="text-maroon">milestones</em>.</h1>
+  <p class="mt-5 max-w-2xl text-clay text-base sm:text-lg leading-relaxed">Enter your date of birth and AgeArc draws your personal timeline — your exact age, the days you have lived, the birthdays still ahead, and your Vedic rashi. Free forever, no signup.</p>
+  <div class="mt-6 inline-flex items-center gap-2 rounded-full border hairline bg-parchment px-4 py-2 text-xs font-semibold tracking-widest uppercase">
+    <span class="w-2 h-2 rounded-full bg-maroon tick-dot"></span>
+    Unlimited Free Usage
+  </div>
+</section>
+
+<!-- ============ TOP AD ============ -->
+<div class="no-print mx-auto max-w-6xl px-4 sm:px-6 pt-4" role="complementary" aria-label="Advertisement">
+  <div class="mx-auto text-center" style="max-width:728px">
+    <span class="block text-[10px] tracking-[0.18em] uppercase text-slate-400 mb-1.5">Advertisement</span>
+    <div class="flex justify-center overflow-hidden">
+      <div class="origin-top scale-[0.44] sm:scale-100 shrink-0">
+        <script>
+          atOptions = { 'key' : '4e68ac77881c17fe128a46565d9a4e8c', 'format' : 'iframe', 'height' : 90, 'width' : 728, 'params' : {} };
+        </script>
+        <script src="https://www.highrevenueformat.com/4e68ac77881c17fe128a46565d9a4e8c/invoke.js"></script>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TOOL ============ -->
+<main class="mx-auto max-w-6xl px-4 sm:px-6 py-8">
+  <section aria-label="Age calculator tool" class="rounded-2xl border hairline bg-parchment shadow-[0_18px_50px_-30px_rgba(28,25,23,.35)] overflow-hidden">
+    <div class="border-b hairline px-5 sm:px-8 py-5 flex items-center justify-between">
+      <h2 class="font-serif text-xl sm:text-2xl font-bold">Your timeline begins with a date</h2>
+      <span class="hidden sm:inline text-[11px] tracking-[0.25em] uppercase text-clay">Chapter 01</span>
+    </div>
+
+    <div class="px-5 sm:px-8 py-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div>
+        <label for="dob" class="block text-xs font-semibold tracking-widest uppercase text-clay mb-2">Date of birth</label>
+        <input id="dob" type="date" class="w-full rounded-lg border hairline bg-cream px-3 py-2.5 text-ink focus:outline-none focus:ring-2 focus:ring-maroon/60" max="2026-12-31">
+      </div>
+      <div>
+        <label for="asof" class="block text-xs font-semibold tracking-widest uppercase text-clay mb-2">Age as of <span class="normal-case font-normal">(optional)</span></label>
+        <input id="asof" type="date" class="w-full rounded-lg border hairline bg-cream px-3 py-2.5 text-ink focus:outline-none focus:ring-2 focus:ring-maroon/60">
+      </div>
+      <div class="flex items-end gap-3 sm:col-span-2 lg:col-span-2">
+        <button id="calcBtn" class="flex-1 sm:flex-none rounded-lg bg-maroon px-8 py-2.5 text-white font-semibold tracking-wide hover:bg-[#6d0f2b] active:scale-[.98] transition">Calculate</button>
+        <button id="resetBtn" class="rounded-lg border hairline px-5 py-2.5 font-medium hover:bg-cream transition">Reset</button>
+      </div>
+    </div>
+
+    <p id="errorMsg" class="hidden px-5 sm:px-8 pb-4 text-sm font-medium text-maroon" role="alert"></p>
+
+    <!-- RESULTS -->
+    <div id="results" class="hidden border-t hairline">
+      <div class="px-5 sm:px-8 pt-8 pb-2 flex items-end justify-between flex-wrap gap-3">
+        <div>
+          <p class="text-[11px] tracking-[0.3em] uppercase text-maroon font-semibold">Chapter 02 — The Story So Far</p>
+          <h3 class="font-serif text-2xl sm:text-3xl font-bold mt-1">Your life, in milestones</h3>
+        </div>
+        <button id="copyBtn" class="text-xs font-semibold tracking-widest uppercase border hairline rounded-full px-4 py-2 hover:bg-cream transition">Copy summary</button>
+      </div>
+
+      <div class="px-5 sm:px-8 py-8">
+        <div class="timeline-rail pl-10 space-y-6">
+
+          <!-- Milestone: born -->
+          <article class="tl-node done rounded-xl border hairline bg-cream p-5">
+            <p class="text-[11px] tracking-[0.25em] uppercase text-clay font-semibold">Milestone · The Beginning</p>
+            <h4 class="font-serif text-xl font-bold mt-1">You arrived on <span id="bornLine" class="text-maroon"></span></h4>
+            <p id="bornSub" class="text-sm text-clay mt-1"></p>
+          </article>
+
+          <!-- Milestone: age as of -->
+          <article class="tl-node rounded-xl border-2 border-maroon/70 bg-parchment p-5 sm:p-6">
+            <p class="text-[11px] tracking-[0.25em] uppercase text-clay font-semibold">Milestone · <span id="asofLabel">Today</span></p>
+            <div class="mt-3 flex items-end gap-4 sm:gap-7 flex-wrap">
+              <div><p class="num-serif text-5xl sm:text-6xl font-bold text-maroon" id="ageYears">–</p><p class="text-xs tracking-widest uppercase text-clay mt-1">Years</p></div>
+              <div><p class="num-serif text-5xl sm:text-6xl font-bold" id="ageMonths">–</p><p class="text-xs tracking-widest uppercase text-clay mt-1">Months</p></div>
+              <div><p class="num-serif text-5xl sm:text-6xl font-bold" id="ageDays">–</p><p class="text-xs tracking-widest uppercase text-clay mt-1">Days</p></div>
+            </div>
+            <p id="asofNote" class="text-sm text-clay mt-4"></p>
+          </article>
+
+          <!-- Milestone: totals -->
+          <article class="tl-node rounded-xl border hairline bg-cream p-5">
+            <p class="text-[11px] tracking-[0.25em] uppercase text-clay font-semibold">Milestone · Everything Lived</p>
+            <div class="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div><p class="num-serif text-2xl sm:text-3xl font-bold" id="statDays">–</p><p class="text-xs text-clay mt-1">days alive</p></div>
+              <div><p class="num-serif text-2xl sm:text-3xl font-bold" id="statHours">–</p><p class="text-xs text-clay mt-1">hours</p></div>
+              <div><p class="num-serif text-2xl sm:text-3xl font-bold" id="statMinutes">–</p><p class="text-xs text-clay mt-1">minutes</p></div>
+              <div><p class="num-serif text-2xl sm:text-3xl font-bold" id="statWeeks">–</p><p class="text-xs text-clay mt-1">weeks</p></div>
+            </div>
+            <p class="text-sm text-clay mt-4">Your heart has beaten roughly <strong id="statHeart" class="text-ink">–</strong> times, and you have breathed about <strong id="statBreath" class="text-ink">–</strong> breaths <span class="text-xs">(at resting averages)</span>.</p>
+            <p class="mt-3 text-sm font-medium">Live counter: <span class="num-serif font-bold text-maroon" id="liveSeconds">–</span> seconds and counting <span class="w-2 h-2 inline-block rounded-full bg-maroon tick-dot align-middle"></span></p>
+          </article>
+
+          <!-- Milestone: next birthday countdown -->
+          <article class="tl-node rounded-xl border hairline bg-maroon text-cream p-5 sm:p-6">
+            <p class="text-[11px] tracking-[0.25em] uppercase text-cream/70 font-semibold">Milestone · Up Next</p>
+            <h4 class="font-serif text-2xl font-bold mt-1" id="bdayTitle">Your next birthday</h4>
+            <p class="text-cream/80 text-sm mt-1" id="bdayDateLine"></p>
+            <div class="mt-4 grid grid-cols-4 gap-2 sm:gap-4 max-w-md">
+              <div class="rounded-lg bg-white/10 p-3 text-center"><p class="num-serif text-2xl sm:text-3xl font-bold" id="cdDays">–</p><p class="text-[10px] tracking-widest uppercase text-cream/70 mt-1">Days</p></div>
+              <div class="rounded-lg bg-white/10 p-3 text-center"><p class="num-serif text-2xl sm:text-3xl font-bold" id="cdHours">–</p><p class="text-[10px] tracking-widest uppercase text-cream/70 mt-1">Hours</p></div>
+              <div class="rounded-lg bg-white/10 p-3 text-center"><p class="num-serif text-2xl sm:text-3xl font-bold" id="cdMins">–</p><p class="text-[10px] tracking-widest uppercase text-cream/70 mt-1">Mins</p></div>
+              <div class="rounded-lg bg-white/10 p-3 text-center"><p class="num-serif text-2xl sm:text-3xl font-bold" id="cdSecs">–</p><p class="text-[10px] tracking-widest uppercase text-cream/70 mt-1">Secs</p></div>
+            </div>
+          </article>
+
+          <!-- Milestone: upcoming milestones -->
+          <article class="tl-node rounded-xl border hairline bg-cream p-5">
+            <p class="text-[11px] tracking-[0.25em] uppercase text-clay font-semibold">Milestone · Still Ahead</p>
+            <h4 class="font-serif text-xl font-bold mt-1">Dates worth circling</h4>
+            <ul id="milestoneList" class="mt-4 space-y-3"></ul>
+          </article>
+
+          <!-- Milestone: rashi -->
+          <article class="tl-node rounded-xl border hairline bg-parchment p-5">
+            <p class="text-[11px] tracking-[0.25em] uppercase text-clay font-semibold">Milestone · Written in the Stars</p>
+            <div class="mt-2 flex items-start gap-4 flex-wrap">
+              <div class="w-16 h-16 rounded-full bg-maroon text-cream flex items-center justify-center font-serif text-2xl font-bold shrink-0" id="rashiGlyph">✦</div>
+              <div class="min-w-[200px] flex-1">
+                <h4 class="font-serif text-2xl font-bold">Vedic Rashi · <span class="text-maroon" id="rashiName">–</span></h4>
+                <p class="text-sm text-clay mt-1" id="rashiRange"></p>
+                <div class="mt-3 grid grid-cols-3 gap-3 max-w-md text-sm">
+                  <div><p class="text-[10px] tracking-widest uppercase text-clay">Ruling planet</p><p class="font-semibold" id="rashiPlanet">–</p></div>
+                  <div><p class="text-[10px] tracking-widest uppercase text-clay">Element</p><p class="font-semibold" id="rashiElement">–</p></div>
+                  <div><p class="text-[10px] tracking-widest uppercase text-clay">Western sign</p><p class="font-semibold" id="rashiWestern">–</p></div>
+                </div>
+              </div>
+            </div>
+            <p class="text-xs text-clay mt-4 leading-relaxed border-t hairline pt-3">Approximation from your birth date using sidereal Sun-sign ranges — a widely used simplification. A true Vedic Moon-sign rashi needs your exact birth time and place for a full chart. <a href="#faq" class="underline decoration-maroon/50 hover:text-maroon">Learn more in the FAQs</a>.</p>
+          </article>
+
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ============ BOTTOM AD ============ -->
+<div class="no-print mx-auto max-w-6xl px-4 sm:px-6 pb-4" role="complementary" aria-label="Advertisement">
+  <div class="mx-auto text-center" style="max-width:300px">
+    <span class="block text-[10px] tracking-[0.18em] uppercase text-slate-400 mb-1.5">Advertisement</span>
+    <div class="flex justify-center overflow-hidden">
+      <script>
+(function(grnp){
+var d = document,
+    s = d.createElement('script'),
+    l = d.currentScript || d.scripts[d.scripts.length - 1];
+s.settings = grnp || {};
+s.src = "\/\/peacefulbicycle.com\/bnXtVJsnd.GElF0oYVWQcY\/Qe\/mf9qu-ZqUtlZk\/PzTHcx1LM\/jWIZwkMTj\/U\/t-NrzmUnyOMsj\/AzydO\/Qx";
+s.async = true;
+s.referrerPolicy = 'no-referrer-when-downgrade';
+l.parentNode.insertBefore(s, l);
+})({})
+</script>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SEO ARTICLE ============ -->
+<article id="seo-article" class="mx-auto max-w-3xl px-4 sm:px-6 py-10 sm:py-14">
+  <p class="text-[11px] tracking-[0.3em] uppercase text-maroon font-semibold mb-3">Chapter 03 — The Long Read</p>
+  <h2 class="font-serif text-3xl sm:text-4xl font-bold tracking-tight">The Age Calculator, Explained: Why Getting Your Exact Age Right Is Harder Than It Looks</h2>
+
+  <p class="dropcap mt-6 text-clay leading-8">Most of us answer the question "how old are you?" with a single number. Twenty-eight. Forty-three. Sixty-one. But that single number hides a surprising amount of complexity. Your exact age — the precise count of years, months and days since the day you were born — is something almost nobody can compute in their head, and the reason is simple: the calendar itself is irregular. Months are not equal. Years are not equal. And every four years, February quietly sneaks in an extra day that shifts everything. An age calculator exists to do this fiddly arithmetic for you, instantly and without error.</p>
+
+  <h3 class="font-serif text-2xl font-bold mt-10">What an age calculator actually does</h3>
+  <p class="mt-4 text-clay leading-8">At its core, an age calculator takes two dates — your date of birth and a reference date, usually today — and measures the exact distance between them in calendar units. The naive approach, subtracting one year from another, gets the birthday right but little else. Real calendar math works in layers: first the years, then the months, then the days, borrowing from the actual previous month when the day-of-month has not been reached yet. That borrowing step is where month lengths matter. If you were born on 31 January and today is 1 March, you are not "one month and one day" old in any clean sense; the calculator must account for the fact that February has 28 or 29 days, and that January has 31. Quality tools like AgeArc use these real calendar rules rather than the lazy approximation of "a month equals 30.44 days," which is why the year-month-day breakdown comes out exact instead of rounded.</p>
+
+  <h3 class="font-serif text-2xl font-bold mt-10">Why exact age matters in real life</h3>
+  <p class="mt-4 text-clay leading-8">For most casual conversation, "about thirty" is fine. But a surprising number of real-world processes demand precision. School admissions in India and elsewhere often set cutoffs like "the child must be 6 years old as of 31 March" — a single day can decide eligibility. Government job notifications specify a maximum age "as on" the application deadline. Passport offices, driving licence authorities, and pension schemes all work with exact dates, not vibes. Parents tracking a newborn's growth measure age in months and weeks, because paediatric milestones are calibrated that way. HR departments verifying candidate eligibility, universities checking scholarship age limits, and courts determining whether someone was a minor on a specific date all need the same thing: an unambiguous answer to "how old, exactly, on this exact date?" This is also why the ability to calculate age as of any date — past or future — is so useful. You are not always asking about today. Sometimes you need to know how old you will be when you retire, how old you were when you graduated, or whether your child will qualify for a school batch two years from now.</p>
+
+  <h3 class="font-serif text-2xl font-bold mt-10">Leap years, month lengths and the February 29 problem</h3>
+  <p class="mt-4 text-clay leading-8">Leap years exist because the Earth takes roughly 365.2422 days to orbit the Sun, and the calendar has to stay in sync with the seasons. The rule most people know — every four years — is almost right, but century years break it unless they are divisible by 400. That is why 2000 was a leap year but 1900 was not. For age calculation, the interesting casualty of this system is the leap-day birthday. Someone born on 29 February only has a true birthday every four years, so every age calculator has to make a decision: in ordinary years, do they turn a year older on 28 February or 1 March? There is no universal law, but 1 March is the most common convention in software and legal contexts, and it is the one AgeArc uses. If you are a leapling, your timeline will note both your observed birthday and your next genuine 29 February — because waiting four years for the real thing deserves its own milestone.</p>
+
+  <h3 class="font-serif text-2xl font-bold mt-10">Age on any date: the time machine feature</h3>
+  <p class="mt-4 text-clay leading-8">The default mode of any age calculator is "how old am I right now," but the more interesting mode is "how old was I, or will I be, on this date?" Set the reference date to a day in the past and you can reconstruct your exact age at any life event: your first day of school, your wedding, the day your child was born. Set it in the future and the calculator becomes a planning instrument: your age on the day of a marathon, on your retirement date, on the first day of a new job. AgeArc's "Age as of" field exists precisely for this. Because the same exact calendar math is applied regardless of which date you pick, the answer is just as trustworthy for 15 August 1998 as it is for 1 January 2040. One caveat worth knowing: dates before your birth produce no age at all, and the tool will tell you so rather than inventing a negative one.</p>
+
+  <h3 class="font-serif text-2xl font-bold mt-10">The psychology of the birthday countdown</h3>
+  <p class="mt-4 text-clay leading-8">There is a reason age calculators with live birthday countdowns get bookmarked and revisited. Humans are wired for anticipation; a ticking countdown turns an abstract future date into something you can feel approaching. Watching the days, hours and seconds drain away toward your next birthday is oddly satisfying, and milestone birthdays — 18, 21, 30, 50, 100 — carry genuine emotional weight across cultures. They mark transitions: legal adulthood, the end of a decade, the beginning of a new one. AgeArc leans into this by presenting your results as a timeline rather than a spreadsheet. The "Still Ahead" section collects the dates worth circling — your next birthday, the next round-number age, the day you will have been alive for 10,000 or 20,000 days — because a life measured only in totals feels flat, while a life measured in upcoming milestones feels like a story still being written.</p>
+
+  <h3 class="font-serif text-2xl font-bold mt-10">Your life in numbers: days, hours, heartbeats</h3>
+  <p class="mt-4 text-clay leading-8">Totals have their own quiet power. Knowing you have been alive for, say, 13,245 days reframes your life in a way that "36 years" never does. Days feel earned; each one was lived. Hours and minutes push the perspective further, and a live seconds counter — ticking upward as you watch — makes time's passage almost tangible. The estimated heartbeat and breath counts come from resting averages (about 70 beats and 16 breaths per minute) and are obviously approximations, not medical measurements, but they serve a purpose: they remind you that the body has been working continuously since day one. Few competitors present these totals alongside the exact age and the countdown in one coherent view; usually you get one or the other. There is no technical reason for that — it is just arithmetic — which is why AgeArc shows everything at once.</p>
+
+  <h3 class="font-serif text-2xl font-bold mt-10">Vedic rashi: the India angle most calculators miss</h3>
+  <p class="mt-4 text-clay leading-8">Almost every age calculator that bothers with astrology gives you the Western zodiac sign — Aries, Taurus, Gemini and so on, based on the tropical calendar. That is fine as far as it goes, but for hundreds of millions of people in India, the sign that actually matters in daily life is the Vedic rashi. Traditionally, rashi means the Moon's position at the moment of birth within the sidereal zodiac, the fixed-star frame used by Jyotish. It is the rashi, not the Western Sun sign, that appears in kundli matching, in naming ceremonies where a child's name is chosen from the syllables of their nakshatra and rashi, and in the yearly rashifal forecasts published in every Indian newspaper. Because the sidereal and tropical zodiacs are offset by about 24 degrees (the ayanamsa), your Vedic rashi is very often not the same as your Western sign — a "Taurus" in the newspaper column may well be Mesha or Vrishabha in the Vedic system, depending on the exact date.</p>
+  <p class="mt-4 text-clay leading-8">Here is the honest technical detail: a true Moon-sign rashi cannot be derived from the birth date alone, because the Moon moves through a full rashi roughly every two and a quarter days. Two people born on the same date in different cities, hours apart, can have different Moon signs. What AgeArc shows is the standard approximation used by date-only tools: your rashi estimated from the sidereal Sun-sign date ranges — Mesha from mid-April, Vrishabha from mid-May, and so on through Meena. For a large share of birth dates this matches the true rashi, and near sign boundaries it may not. The tool says so plainly next to the result, along with each rashi's ruling planet and element, because an approximation you understand is more useful than a precise-sounding answer that hides its limits. If you need the exact Moon sign for matching or muhurta, a full chart with your birth time remains the way to go.</p>
+
+  <h3 class="font-serif text-2xl font-bold mt-10">How to use AgeArc</h3>
+  <p class="mt-4 text-clay leading-8">Using the tool takes about ten seconds. Enter your date of birth in the first field. If you want your age as of a specific date rather than today, fill in the second field; otherwise leave it blank and today is used automatically. Press Calculate — or just change either date and watch the timeline update by itself. Your date of birth is remembered on your own device, so the next visit starts where you left off. The timeline then walks you through five chapters: the day you were born (including the weekday, which most people have never actually checked), your exact age, your lifetime totals with a live seconds counter, your next birthday with a second-by-second countdown, the milestones still ahead, and your Vedic rashi. A "Copy summary" button puts the whole thing into your clipboard as plain text, handy for forms, bios, or settling debates in the family group chat.</p>
+
+  <h3 class="font-serif text-2xl font-bold mt-10">Accuracy, privacy and the fine print</h3>
+  <p class="mt-4 text-clay leading-8">Every calculation on this page happens inside your browser using the same calendar rules your operating system uses — there is no server, no database and no account. Your date of birth never leaves your device; the optional "remember me" feature uses your browser's own localStorage, which you can clear at any time, and the Reset button wipes it immediately. As for accuracy: the year-month-day breakdown follows standard date arithmetic, leap years follow the full Gregorian rule including the century exception, and leap-day birthdays are observed on 1 March in non-leap years. The heartbeat and breath figures are illustrative estimates from population averages. The rashi is a clearly labelled approximation. Everything else — the countdowns, the totals, the milestone dates — is exact to the day. That combination of rigour where it counts and honesty where it approximates is, we think, what a good age calculator should feel like: a small instrument you can trust, presented like the story it really is.</p>
+</article>
+
+<!-- ============ FAQ ============ -->
+<section id="faq" class="mx-auto max-w-3xl px-4 sm:px-6 pb-16">
+  <p class="text-[11px] tracking-[0.3em] uppercase text-maroon font-semibold mb-3">Chapter 04 — Questions</p>
+  <h2 class="font-serif text-3xl font-bold tracking-tight mb-8">Frequently asked questions</h2>
+  <div class="space-y-4">
+    <details class="rounded-xl border hairline bg-parchment p-5 group">
+      <summary class="font-serif text-lg font-bold cursor-pointer list-none flex justify-between items-center gap-4">How does AgeArc calculate my exact age in years, months and days?<span class="text-maroon text-2xl leading-none group-open:rotate-45 transition-transform">+</span></summary>
+      <p class="mt-3 text-clay leading-7 text-[15px]">AgeArc compares your date of birth with the target date using real calendar rules. It takes the difference in years first, then adjusts months and days by borrowing days from the actual previous month, so leap years and varying month lengths are handled correctly — no 30.44-day month approximations.</p>
+    </details>
+    <details class="rounded-xl border hairline bg-parchment p-5 group">
+      <summary class="font-serif text-lg font-bold cursor-pointer list-none flex justify-between items-center gap-4">What happens if I was born on February 29?<span class="text-maroon text-2xl leading-none group-open:rotate-45 transition-transform">+</span></summary>
+      <p class="mt-3 text-clay leading-7 text-[15px]">In non-leap years your birthday is observed on 1 March, the most common convention. Your age, countdown and milestones all follow this rule, and the timeline also shows your next true 29 February birthday if you are a leap-day baby.</p>
+    </details>
+    <details class="rounded-xl border hairline bg-parchment p-5 group">
+      <summary class="font-serif text-lg font-bold cursor-pointer list-none flex justify-between items-center gap-4">Can I calculate my age on a past or future date?<span class="text-maroon text-2xl leading-none group-open:rotate-45 transition-transform">+</span></summary>
+      <p class="mt-3 text-clay leading-7 text-[15px]">Yes. Use the "Age as of" field for any date, past or future — useful for school admission cutoffs, exam eligibility, retirement planning, or finding your exact age on a memorable day. Leave it blank to use today.</p>
+    </details>
+    <details class="rounded-xl border hairline bg-parchment p-5 group">
+      <summary class="font-serif text-lg font-bold cursor-pointer list-none flex justify-between items-center gap-4">What is Vedic rashi, and how is it different from my zodiac sign?<span class="text-maroon text-2xl leading-none group-open:rotate-45 transition-transform">+</span></summary>
+      <p class="mt-3 text-clay leading-7 text-[15px]">Your Western zodiac sign uses the tropical Sun position. Vedic rashi traditionally refers to the Moon's position at birth in the sidereal zodiac, and it is the sign used in Indian astrology for kundli matching, naming ceremonies and rashifal forecasts. The two systems are offset by about 24 degrees, so they often differ.</p>
+    </details>
+    <details class="rounded-xl border hairline bg-parchment p-5 group">
+      <summary class="font-serif text-lg font-bold cursor-pointer list-none flex justify-between items-center gap-4">Is the Vedic rashi shown here exact?<span class="text-maroon text-2xl leading-none group-open:rotate-45 transition-transform">+</span></summary>
+      <p class="mt-3 text-clay leading-7 text-[15px]">It is an approximation from your birth date using sidereal Sun-sign ranges. A true Moon-sign rashi needs your exact birth time and birthplace. Treat the result as a starting point, especially if your birthday falls near a sign boundary.</p>
+    </details>
+    <details class="rounded-xl border hairline bg-parchment p-5 group">
+      <summary class="font-serif text-lg font-bold cursor-pointer list-none flex justify-between items-center gap-4">Is my date of birth stored or sent anywhere?<span class="text-maroon text-2xl leading-none group-open:rotate-45 transition-transform">+</span></summary>
+      <p class="mt-3 text-clay leading-7 text-[15px]">No. Everything runs in your browser. Your date of birth is optionally remembered on your own device via localStorage and never uploaded to any server. The Reset button clears it instantly.</p>
+    </details>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer class="border-t hairline bg-parchment">
+  <div class="mx-auto max-w-6xl px-4 sm:px-6 py-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+    <div>
+      <p class="font-serif text-xl font-bold">Age<span class="text-maroon">Arc</span><span class="text-maroon">.</span></p>
+      <p class="text-sm text-clay mt-1">Every life, measured in milestones. Free forever, no signup.</p>
+    </div>
+    <nav class="flex items-center gap-6 text-sm font-medium">
+      <a href="#top" class="hover:text-maroon transition-colors">Home</a>
+      <a href="https://fixoraa.tech" class="hover:text-maroon transition-colors">More Tools</a>
+    </nav>
+  </div>
+  <p class="text-center text-xs text-clay/70 pb-6">© 2026 AgeArc. Calculations run entirely in your browser.</p>
+<p class="fx-credit" style="text-align:center;font-size:12.5px;opacity:.62;margin:10px auto 2px;letter-spacing:.01em">Made by <a href="https://fixoraa.tech" target="_blank" rel="noopener" style="color:inherit;font-weight:700;text-decoration:underline;text-underline-offset:2px">Fixoraa</a></p>
+</footer>
+
+<script>
+// ==== AGEARC-LOGIC-START ====
+// Pure, DOM-free logic. Tested by ~/workspace/tool-factory/tests/agearc.test.js
+// All dates are {y,m,d} objects; all math uses UTC midnight to avoid TZ issues.
+var AgeArcLogic = (function () {
+  var DAY_MS = 86400000;
+
+  function isLeapYear(y) { return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0; }
+
+  function daysInMonth(y, m) { // m: 1..12
+    return new Date(Date.UTC(y, m, 0)).getUTCDate();
+  }
+
+  function parseISODate(s) { // 'YYYY-MM-DD' -> {y,m,d} | null
+    if (!s || typeof s !== 'string') return null;
+    var p = s.split('-');
+    if (p.length !== 3) return null;
+    var y = +p[0], m = +p[1], d = +p[2];
+    if (!isFinite(y) || !isFinite(m) || !isFinite(d)) return null;
+    if (y < 1 || y > 9999 || m < 1 || m > 12 || d < 1 || d > daysInMonth(y, m)) return null;
+    return { y: y, m: m, d: d };
+  }
+
+  function toUTC(d) { return Date.UTC(d.y, d.m - 1, d.d); }
+
+  function fromUTC(ms) {
+    var t = new Date(ms);
+    return { y: t.getUTCFullYear(), m: t.getUTCMonth() + 1, d: t.getUTCDate() };
+  }
+
+  function cmp(a, b) { var x = toUTC(a) - toUTC(b); return x < 0 ? -1 : x > 0 ? 1 : 0; }
+
+  function todayParts(now) {
+    var t = now ? new Date(now) : new Date();
+    return { y: t.getFullYear(), m: t.getMonth() + 1, d: t.getDate() };
+  }
+
+  // Exact calendar age. born <= target expected (validated separately).
+  function calcAge(born, target) {
+    var years = target.y - born.y, months = target.m - born.m, days = target.d - born.d;
+    if (days < 0) {
+      var pm = target.m - 1, py = target.y;
+      if (pm < 1) { pm = 12; py--; }
+      days += daysInMonth(py, pm);
+      months--;
+    }
+    if (months < 0) { months += 12; years--; }
+    return { years: years, months: months, days: days };
+  }
+
+  function daysLived(born, target) {
+    return Math.round((toUTC(target) - toUTC(born)) / DAY_MS);
+  }
+
+  // Next observed birthday. Leap-day births observed Mar 1 in non-leap years.
+  function observedBirthday(born, year) {
+    if (born.m === 2 && born.d === 29 && !isLeapYear(year)) return { y: year, m: 3, d: 1 };
+    return { y: year, m: born.m, d: born.d };
+  }
+
+  function nextBirthday(born, today) {
+    var c0 = observedBirthday(born, today.y);
+    var d0 = Math.round((toUTC(c0) - toUTC(today)) / DAY_MS);
+    if (d0 >= 0) return { date: c0, daysUntil: d0, turning: c0.y - born.y, isToday: d0 === 0 };
+    var c1 = observedBirthday(born, today.y + 1);
+    var d1 = Math.round((toUTC(c1) - toUTC(today)) / DAY_MS);
+    return { date: c1, daysUntil: d1, turning: c1.y - born.y, isToday: false };
+  }
+
+  // Next TRUE Feb 29 birthday (for leap-day births); null otherwise or if none within 8y.
+  function nextTrueLeapBirthday(born, today) {
+    if (!(born.m === 2 && born.d === 29)) return null;
+    for (var y = today.y; y <= today.y + 8; y++) {
+      if (isLeapYear(y)) {
+        var d = { y: y, m: 2, d: 29 };
+        if (cmp(d, today) >= 0) return { date: d, daysUntil: Math.round((toUTC(d) - toUTC(today)) / DAY_MS) };
+      }
+    }
+    return null;
+  }
+
+  var RASHIS = [
+    { name: 'Mesha',      planet: 'Mars (Mangal)',   element: 'Fire',  from: [4, 14],  to: [5, 14] },
+    { name: 'Vrishabha',  planet: 'Venus (Shukra)',  element: 'Earth', from: [5, 15],  to: [6, 14] },
+    { name: 'Mithuna',    planet: 'Mercury (Budh)',  element: 'Air',   from: [6, 15],  to: [7, 15] },
+    { name: 'Karka',      planet: 'Moon (Chandra)',  element: 'Water', from: [7, 16],  to: [8, 16] },
+    { name: 'Simha',      planet: 'Sun (Surya)',     element: 'Fire',  from: [8, 17],  to: [9, 16] },
+    { name: 'Kanya',      planet: 'Mercury (Budh)',  element: 'Earth', from: [9, 17],  to: [10, 16] },
+    { name: 'Tula',       planet: 'Venus (Shukra)',  element: 'Air',   from: [10, 17], to: [11, 15] },
+    { name: 'Vrishchika', planet: 'Mars (Mangal)',   element: 'Water', from: [11, 16], to: [12, 15] },
+    { name: 'Dhanu',      planet: 'Jupiter (Guru)',  element: 'Fire',  from: [12, 16], to: [1, 13] },
+    { name: 'Makara',     planet: 'Saturn (Shani)',  element: 'Earth', from: [1, 14],  to: [2, 12] },
+    { name: 'Kumbha',     planet: 'Saturn (Shani)',  element: 'Air',   from: [2, 13],  to: [3, 13] },
+    { name: 'Meena',      planet: 'Jupiter (Guru)',  element: 'Water', from: [3, 14],  to: [4, 13] }
+  ];
+
+  var ZODIAC = [
+    { name: 'Aries', from: [3, 21], to: [4, 19] }, { name: 'Taurus', from: [4, 20], to: [5, 20] },
+    { name: 'Gemini', from: [5, 21], to: [6, 20] }, { name: 'Cancer', from: [6, 21], to: [7, 22] },
+    { name: 'Leo', from: [7, 23], to: [8, 22] }, { name: 'Virgo', from: [8, 23], to: [9, 22] },
+    { name: 'Libra', from: [9, 23], to: [10, 22] }, { name: 'Scorpio', from: [10, 23], to: [11, 21] },
+    { name: 'Sagittarius', from: [11, 22], to: [12, 21] }, { name: 'Capricorn', from: [12, 22], to: [1, 19] },
+    { name: 'Aquarius', from: [1, 20], to: [2, 18] }, { name: 'Pisces', from: [2, 19], to: [3, 20] }
+  ];
+
+  function inRange(m, d, from, to) {
+    var after = (m > from[0]) || (m === from[0] && d >= from[1]);
+    var before = (m < to[0]) || (m === to[0] && d <= to[1]);
+    if (from[0] <= to[0]) return after && before;
+    return after || before; // wraps new year
+  }
+
+  function getRashi(m, d) {
+    for (var i = 0; i < RASHIS.length; i++) {
+      if (inRange(m, d, RASHIS[i].from, RASHIS[i].to)) return RASHIS[i];
+    }
+    return null;
+  }
+
+  function getWesternZodiac(m, d) {
+    for (var i = 0; i < ZODIAC.length; i++) {
+      if (inRange(m, d, ZODIAC[i].from, ZODIAC[i].to)) return ZODIAC[i].name;
+    }
+    return null;
+  }
+
+  function weekdayName(d) {
+    return ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date(toUTC(d)).getUTCDay()];
+  }
+
+  function fmtDate(d) {
+    var M = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return d.d + ' ' + M[d.m - 1] + ' ' + d.y;
+  }
+
+  // Upcoming milestones: next birthday, round ages, day-count marks, true leap birthdays.
+  function milestones(born, today) {
+    var out = [];
+    var nb = nextBirthday(born, today);
+    out.push({ label: 'Birthday — turning ' + nb.turning, date: nb.date, kind: 'birthday' });
+    [18, 21, 25, 30, 40, 50, 60, 70, 80, 90, 100].forEach(function (a) {
+      var dt = observedBirthday(born, born.y + a);
+      if (cmp(dt, today) > 0) out.push({ label: 'Turning ' + a, date: dt, kind: 'round' });
+    });
+    var bornUTC = toUTC(born), tUTC = toUTC(today);
+    [1000, 5000, 10000, 20000, 30000, 50000].forEach(function (n) {
+      var ms = bornUTC + n * DAY_MS;
+      if (ms > tUTC) out.push({ label: n.toLocaleString('en-US') + ' days alive', date: fromUTC(ms), kind: 'days' });
+    });
+    var tl = nextTrueLeapBirthday(born, today);
+    if (tl && tl.daysUntil > 0) out.push({ label: 'True leap-day birthday', date: tl.date, kind: 'leap' });
+    // sort, dedupe by date+label, keep next 6
+    out.sort(function (a, b) { return toUTC(a.date) - toUTC(b.date); });
+    var seen = {}, res = [];
+    for (var i = 0; i < out.length && res.length < 6; i++) {
+      var k = toUTC(out[i].date) + '|' + out[i].label;
+      if (!seen[k]) { seen[k] = 1; res.push(out[i]); }
+    }
+    return res;
+  }
+
+  // Validate raw inputs. Returns {ok:true,born,target} or {ok:false,error}
+  function validate(dobStr, asofStr, nowOverride) {
+    if (!dobStr) return { ok: false, error: 'Please enter your date of birth.' };
+    var born = parseISODate(dobStr);
+    if (!born) return { ok: false, error: 'That date of birth does not look valid.' };
+    var today = todayParts(nowOverride);
+    if (cmp(born, today) > 0) return { ok: false, error: 'Your date of birth cannot be in the future.' };
+    var age = calcAge(born, today);
+    if (age.years > 150) return { ok: false, error: 'That would make you over 150 years old — please check the date.' };
+    var target = today;
+    if (asofStr) {
+      target = parseISODate(asofStr);
+      if (!target) return { ok: false, error: 'The "age as of" date does not look valid.' };
+      if (cmp(target, born) < 0) return { ok: false, error: 'The "age as of" date is before your date of birth.' };
+    }
+    return { ok: true, born: born, target: target, today: today };
+  }
+
+  return {
+    DAY_MS: DAY_MS, isLeapYear: isLeapYear, daysInMonth: daysInMonth,
+    parseISODate: parseISODate, toUTC: toUTC, fromUTC: fromUTC, cmp: cmp,
+    todayParts: todayParts, calcAge: calcAge, daysLived: daysLived,
+    observedBirthday: observedBirthday, nextBirthday: nextBirthday,
+    nextTrueLeapBirthday: nextTrueLeapBirthday, getRashi: getRashi,
+    getWesternZodiac: getWesternZodiac, weekdayName: weekdayName,
+    fmtDate: fmtDate, milestones: milestones, validate: validate
+  };
+})();
+// ==== AGEARC-LOGIC-END ====
+</script>
+
+<script>
+// ---- DOM wiring ----
+(function () {
+  var L = AgeArcLogic;
+  var $ = function (id) { return document.getElementById(id); };
+  var dobEl = $('dob'), asofEl = $('asof'), errEl = $('errorMsg'), resEl = $('results');
+  var tickTimer = null, liveBorn = null;
+
+  function fmt(n) { return n.toLocaleString('en-US'); }
+
+  function showError(msg) {
+    errEl.textContent = msg;
+    errEl.classList.remove('hidden');
+    resEl.classList.add('hidden');
+  }
+  function clearError() { errEl.classList.add('hidden'); errEl.textContent = ''; }
+
+  function stopTick() { if (tickTimer) { clearInterval(tickTimer); tickTimer = null; } }
+
+  function render(born, target, today) {
+    clearError();
+    var age = L.calcAge(born, target);
+    $('ageYears').textContent = age.years;
+    $('ageMonths').textContent = age.months;
+    $('ageDays').textContent = age.days;
+
+    var customAsOf = L.cmp(target, today) !== 0;
+    $('asofLabel').textContent = customAsOf ? ('As of ' + L.fmtDate(target)) : 'Today';
+    $('asofNote').textContent = customAsOf
+      ? 'Your exact age on ' + L.fmtDate(target) + ' (' + L.weekdayName(target) + ').'
+      : 'Your exact age right now, calculated with real calendar rules — leap years included.';
+
+    $('bornLine').textContent = L.fmtDate(born) + '.';
+    $('bornSub').textContent = 'A ' + L.weekdayName(born) + '. ' +
+      (born.m === 2 && born.d === 29 ? 'A rare leap-day arrival — celebrated on 1 March in ordinary years.' : '');
+
+    var dl = L.daysLived(born, target);
+    $('statDays').textContent = fmt(dl);
+    $('statHours').textContent = fmt(dl * 24);
+    $('statMinutes').textContent = fmt(dl * 24 * 60);
+    $('statWeeks').textContent = fmt(Math.floor(dl / 7));
+    $('statHeart').textContent = fmt(Math.round(dl * 24 * 60 * 70)) + '';
+    $('statBreath').textContent = fmt(Math.round(dl * 24 * 60 * 16)) + '';
+
+    var nb = L.nextBirthday(born, today);
+    $('bdayTitle').textContent = nb.isToday ? 'Happy birthday! You turn ' + nb.turning + ' today.' : 'Turning ' + nb.turning;
+    $('bdayDateLine').textContent = L.fmtDate(nb.date) + ' · ' + L.weekdayName(nb.date) +
+      (born.m === 2 && born.d === 29 && !L.isLeapYear(nb.date.y) ? ' (observed on 1 March — not a leap year)' : '');
+
+    var ms = L.milestones(born, today);
+    var ul = $('milestoneList');
+    ul.innerHTML = '';
+    ms.forEach(function (m, i) {
+      var li = document.createElement('li');
+      li.className = 'flex items-center justify-between gap-4 rounded-lg border hairline bg-parchment px-4 py-3';
+      var daysAway = Math.round((L.toUTC(m.date) - L.toUTC(today)) / L.DAY_MS);
+      var left = document.createElement('div');
+      left.innerHTML = '<p class="font-semibold text-[15px]">' + m.label + '</p>' +
+        '<p class="text-xs text-clay">' + fmt(daysAway) + ' days away</p>';
+      var right = document.createElement('p');
+      right.className = 'text-right shrink-0';
+      right.innerHTML = '<span class="font-serif font-bold text-maroon">' + L.fmtDate(m.date) + '</span><br><span class="text-xs text-clay">' + L.weekdayName(m.date) + '</span>';
+      li.appendChild(left); li.appendChild(right);
+      ul.appendChild(li);
+    });
+
+    var r = L.getRashi(born.m, born.d);
+    $('rashiName').textContent = r.name;
+    $('rashiRange').textContent = 'Sidereal Sun-sign approximation for ' + L.fmtDate(born);
+    $('rashiPlanet').textContent = r.planet;
+    $('rashiElement').textContent = r.element;
+    $('rashiWestern').textContent = L.getWesternZodiac(born.m, born.d);
+
+    resEl.classList.remove('hidden');
+
+    // live ticking: countdown + seconds lived
+    stopTick();
+    liveBorn = born;
+    var bornUTCms = L.toUTC(born);
+    function tick() {
+      var nowMs = Date.now();
+      var secs = Math.floor((nowMs - bornUTCms) / 1000);
+      $('liveSeconds').textContent = fmt(Math.max(0, secs));
+      var nbNow = L.nextBirthday(liveBorn, L.todayParts());
+      var bdayLocalMidnight = new Date(nbNow.date.y, nbNow.date.m - 1, nbNow.date.d).getTime();
+      var remain = Math.max(0, bdayLocalMidnight - nowMs);
+      var s = Math.floor(remain / 1000);
+      $('cdDays').textContent = Math.floor(s / 86400);
+      $('cdHours').textContent = String(Math.floor(s % 86400 / 3600)).padStart(2, '0');
+      $('cdMins').textContent = String(Math.floor(s % 3600 / 60)).padStart(2, '0');
+      $('cdSecs').textContent = String(s % 60).padStart(2, '0');
+    }
+    tick();
+    tickTimer = setInterval(tick, 1000);
+  }
+
+  function calculate() {
+    var v = L.validate(dobEl.value, asofEl.value);
+    if (!v.ok) { stopTick(); showError(v.error); return; }
+    try { localStorage.setItem('agearc-dob', dobEl.value); } catch (e) {}
+    render(v.born, v.target, v.today);
+  }
+
+  $('calcBtn').addEventListener('click', calculate);
+  dobEl.addEventListener('change', calculate);
+  asofEl.addEventListener('change', calculate);
+  $('resetBtn').addEventListener('click', function () {
+    dobEl.value = ''; asofEl.value = '';
+    try { localStorage.removeItem('agearc-dob'); } catch (e) {}
+    stopTick(); clearError(); resEl.classList.add('hidden');
+  });
+  $('copyBtn').addEventListener('click', function () {
+    var txt = 'AgeArc timeline\nBorn: ' + $('bornLine').textContent + ' (' + $('bornSub').textContent + ')\n' +
+      'Age: ' + $('ageYears').textContent + ' years, ' + $('ageMonths').textContent + ' months, ' + $('ageDays').textContent + ' days\n' +
+      'Days lived: ' + $('statDays').textContent + ' | Hours: ' + $('statHours').textContent + '\n' +
+      'Next birthday: ' + $('bdayDateLine').textContent + '\n' +
+      'Vedic rashi (approx): ' + $('rashiName').textContent;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(function () {
+        $('copyBtn').textContent = 'Copied!';
+        setTimeout(function () { $('copyBtn').textContent = 'Copy summary'; }, 1500);
+      });
+    }
+  });
+
+  // init
+  var todayISO = new Date().toISOString().slice(0, 10);
+  asofEl.placeholder = todayISO;
+  dobEl.max = todayISO;
+  try {
+    var saved = localStorage.getItem('agearc-dob');
+    if (saved) dobEl.value = saved;
+  } catch (e) {}
+  if (dobEl.value) calculate();
+})();
+</script>
+</body>
+</html>

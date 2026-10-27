@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="canonical" href="https://time.fixoraa.tech/chronolap//">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChronoLap — Stopwatch with Laps, Splits &amp; Fastest Lap Highlights</title>
+<meta name="description" content="ChronoLap is a free online stopwatch with laps and splits. Track every lap, see your fastest and slowest laps highlighted instantly, use keyboard shortcuts and go fullscreen. Unlimited free usage, no signup.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root{ --volt:#b6ff2e; --volt-dim:#86c90f; --ink:#07090a; }
+  body{ font-family:'Archivo',system-ui,sans-serif; background:#07090a; }
+  .mono{ font-family:'JetBrains Mono',ui-monospace,monospace; }
+  .stadium{
+    background:
+      radial-gradient(ellipse 70% 45% at 15% -5%, rgba(182,255,46,.16), transparent 60%),
+      radial-gradient(ellipse 70% 45% at 85% -5%, rgba(182,255,46,.16), transparent 60%),
+      radial-gradient(ellipse 90% 60% at 50% 115%, rgba(182,255,46,.07), transparent 65%),
+      linear-gradient(180deg,#10140f 0%,#0a0d09 55%,#07090a 100%);
+  }
+  .track-lines{
+    background-image:repeating-linear-gradient(90deg, rgba(255,255,255,.045) 0 1px, transparent 1px 72px);
+  }
+  .digits{ font-variant-numeric:tabular-nums; letter-spacing:-.02em; text-shadow:0 0 34px rgba(182,255,46,.28); }
+  .btn{ transition:transform .08s ease, background .15s ease, color .15s ease, border-color .15s ease; }
+  .btn:active{ transform:scale(.96); }
+  .btn:focus-visible, a:focus-visible{ outline:2px solid var(--volt); outline-offset:2px; }
+  .row-fast{ background:rgba(182,255,46,.12) !important; }
+  .row-slow{ background:rgba(248,113,113,.10) !important; }
+  .kbd{ font-family:'JetBrains Mono',monospace; font-size:11px; border:1px solid #3f4a35; border-bottom-width:3px; border-radius:6px; padding:1px 7px; background:#141a10; color:#d9f99d; }
+  details summary::-webkit-details-marker{ display:none; }
+  .faq-body{ display:none; }
+  details[open ] .faq-body{ display:block; }
+  details[open ] .faq-arrow{ transform:rotate(45deg); }
+  .faq-arrow{ transition:transform .2s ease; }
+  :fullscreen .stage-wrap{ max-width:100%; }
+  :fullscreen body{ background:#07090a; }
+</style>
+</head>
+<body id="top" class="text-zinc-100 antialiased min-h-screen flex flex-col">
+
+<!-- HEADER -->
+<header class="sticky top-0 z-40 border-b border-lime-300/15 bg-[#07090a]/90 backdrop-blur">
+  <div class="mx-auto max-w-6xl px-4 sm:px-6 h-16 flex items-center justify-between">
+    <a href="#top" class="flex items-center gap-2.5">
+      <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-[#b6ff2e] text-black shadow-[0_0_18px_rgba(182,255,46,.45)]">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="13" r="7.5"/><path d="M12 9.5V13l2.5 1.8M9.5 2.8h5M12 2.8v2.7"/></svg>
+      </span>
+      <span class="text-xl font-black tracking-tight">CHRONO<span class="text-[#b6ff2e]">LAP</span></span>
+    </a>
+    <nav class="flex items-center gap-2 sm:gap-3 text-sm font-bold">
+      <a href="#top" class="px-3 py-2 rounded-lg text-zinc-300 hover:text-white hover:bg-white/5">Home</a>
+      <a href="https://fixoraa.tech" class="px-3 py-2 rounded-lg bg-[#b6ff2e] text-black hover:bg-[#c9ff5e]">More Tools</a>
+    </nav>
+  </div>
+</header>
+
+<!-- TOP AD -->
+<div class="no-print mx-auto max-w-6xl px-4 sm:px-6 pt-4" role="complementary" aria-label="Advertisement">
+  <div class="mx-auto text-center" style="max-width:728px">
+    <span class="block text-[10px] tracking-[0.18em] uppercase text-slate-400 mb-1.5">Advertisement</span>
+    <div class="flex justify-center overflow-hidden">
+      <div class="origin-top scale-[0.44] sm:scale-100 shrink-0">
+        <script>
+          atOptions = { 'key' : '4e68ac77881c17fe128a46565d9a4e8c', 'format' : 'iframe', 'height' : 90, 'width' : 728, 'params' : {} };
+        </script>
+        <script src="https://www.highrevenueformat.com/4e68ac77881c17fe128a46565d9a4e8c/invoke.js"></script>
+      </div>
+    </div>
+  </div>
+</div>
+
+<main class="flex-1 w-full">
+  <!-- STADIUM STAGE -->
+  <section class="stage-wrap mx-auto max-w-6xl px-4 sm:px-6 pt-6">
+    <div class="stadium track-lines relative overflow-hidden rounded-3xl border border-lime-300/20 px-4 sm:px-10 pt-8 pb-8 shadow-[0_30px_80px_-30px_rgba(182,255,46,.25)]">
+      <!-- floodlight cones -->
+      <div class="pointer-events-none absolute -top-6 left-6 w-40 h-40 rounded-full bg-[#b6ff2e]/10 blur-3xl"></div>
+      <div class="pointer-events-none absolute -top-6 right-6 w-40 h-40 rounded-full bg-[#b6ff2e]/10 blur-3xl"></div>
+
+      <div class="relative flex flex-wrap items-center justify-between gap-3">
+        <h1 class="text-2xl sm:text-3xl font-black tracking-tight">Stopwatch <span class="text-[#b6ff2e]">with Laps</span></h1>
+        <div class="flex items-center gap-2">
+          <span class="inline-flex items-center gap-1.5 rounded-full bg-[#b6ff2e] text-black text-xs font-extrabold px-3 py-1.5 uppercase tracking-wide">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4.5 13.5H11L9.5 22 19 10h-6.5L13 2z"/></svg>
+            Unlimited Free Usage
+          </span>
+          <button id="btnFullscreen" type="button" class="btn inline-flex items-center gap-1.5 rounded-full border border-lime-300/40 text-lime-200 text-xs font-extrabold px-3 py-1.5 uppercase tracking-wide hover:bg-lime-300/10" title="Toggle fullscreen (F)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+            Fullscreen
+          </button>
+        </div>
+      </div>
+
+      <!-- Big clock -->
+      <div class="relative text-center mt-6">
+        <div id="statusLabel" class="mono text-[11px] sm:text-xs tracking-[0.35em] uppercase text-lime-200/70">Ready — press start</div>
+        <div id="display" class="digits mono font-extrabold text-[#eaffb0] leading-none mt-2 text-[17vw] sm:text-[7.5rem] lg:text-[9rem]">0:00.00</div>
+        <div class="mono text-sm sm:text-base text-zinc-400 mt-2">Current lap <span id="currentLap" class="text-lime-200 font-bold">0:00.00</span> <span class="text-zinc-600">·</span> Lap <span id="lapCounter" class="text-lime-200 font-bold">1</span></div>
+      </div>
+
+      <!-- Controls -->
+      <div class="relative flex flex-wrap justify-center gap-3 mt-7">
+        <button id="btnStart" type="button" class="btn min-w-[150px] rounded-2xl bg-[#b6ff2e] text-black font-black text-lg px-8 py-4 shadow-[0_10px_30px_-8px_rgba(182,255,46,.7)] hover:bg-[#c9ff5e]">▶ START</button>
+        <button id="btnLap" type="button" disabled class="btn min-w-[130px] rounded-2xl border-2 border-lime-300/50 text-lime-100 font-extrabold text-lg px-6 py-4 hover:bg-lime-300/10 disabled:opacity-35 disabled:cursor-not-allowed">⚑ LAP</button>
+        <button id="btnReset" type="button" disabled class="btn min-w-[130px] rounded-2xl border-2 border-zinc-600 text-zinc-200 font-extrabold text-lg px-6 py-4 hover:bg-white/5 disabled:opacity-35 disabled:cursor-not-allowed">↺ RESET</button>
+      </div>
+
+      <p class="relative text-center text-xs sm:text-sm text-zinc-400 mt-5">
+        Shortcuts: <span class="kbd">Space</span> start / pause &nbsp; <span class="kbd">L</span> lap &nbsp; <span class="kbd">R</span> reset &nbsp; <span class="kbd">F</span> fullscreen
+      </p>
+
+      <!-- Stats strip -->
+      <div class="relative grid grid-cols-2 sm:grid-cols-4 gap-3 mt-7">
+        <div class="rounded-2xl bg-black/40 border border-white/10 px-4 py-3">
+          <div class="text-[10px] uppercase tracking-[0.2em] text-zinc-400 font-bold">Fastest lap</div>
+          <div id="statFast" class="mono text-lg sm:text-xl font-bold text-[#b6ff2e] mt-1">—</div>
+        </div>
+        <div class="rounded-2xl bg-black/40 border border-white/10 px-4 py-3">
+          <div class="text-[10px] uppercase tracking-[0.2em] text-zinc-400 font-bold">Slowest lap</div>
+          <div id="statSlow" class="mono text-lg sm:text-xl font-bold text-red-300 mt-1">—</div>
+        </div>
+        <div class="rounded-2xl bg-black/40 border border-white/10 px-4 py-3">
+          <div class="text-[10px] uppercase tracking-[0.2em] text-zinc-400 font-bold">Average lap</div>
+          <div id="statAvg" class="mono text-lg sm:text-xl font-bold text-zinc-100 mt-1">—</div>
+        </div>
+        <div class="rounded-2xl bg-black/40 border border-white/10 px-4 py-3">
+          <div class="text-[10px] uppercase tracking-[0.2em] text-zinc-400 font-bold">Laps recorded</div>
+          <div id="statCount" class="mono text-lg sm:text-xl font-bold text-zinc-100 mt-1">0</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LAP TABLE -->
+  <section class="mx-auto max-w-6xl px-4 sm:px-6 mt-6">
+    <div class="rounded-3xl border border-white/10 bg-[#0c0f0b] overflow-hidden">
+      <div class="flex flex-wrap items-center justify-between gap-3 px-5 sm:px-7 py-4 border-b border-white/10">
+        <h2 class="font-black text-lg tracking-tight">Lap &amp; Split Table</h2>
+        <div class="flex items-center gap-2">
+          <button id="btnCopy" type="button" disabled class="btn rounded-lg border border-white/15 text-sm font-bold px-3.5 py-2 hover:bg-white/5 disabled:opacity-35 disabled:cursor-not-allowed">Copy laps</button>
+          <button id="btnCsv" type="button" disabled class="btn rounded-lg bg-[#b6ff2e] text-black text-sm font-extrabold px-3.5 py-2 hover:bg-[#c9ff5e] disabled:opacity-35 disabled:cursor-not-allowed">Download CSV</button>
+        </div>
+      </div>
+      <div class="flex flex-wrap gap-x-5 gap-y-1 px-5 sm:px-7 py-3 text-xs text-zinc-400 border-b border-white/5">
+        <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-[#b6ff2e]"></span> Fastest lap</span>
+        <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-red-400"></span> Slowest lap</span>
+        <span>Split = time for that lap alone · Total = time since start · Δ = split vs your average lap</span>
+      </div>
+      <div id="emptyState" class="px-5 sm:px-7 py-12 text-center">
+        <div class="text-4xl mb-3">🏁</div>
+        <p class="font-bold text-zinc-200">No laps yet</p>
+        <p class="text-sm text-zinc-400 mt-1 max-w-md mx-auto">Press START, then hit LAP (or the <span class="kbd">L</span> key) each time you complete a round. Your splits will appear here, newest first.</p>
+      </div>
+      <div class="overflow-x-auto">
+        <table id="lapTable" class="w-full text-sm hidden">
+          <thead>
+            <tr class="text-left text-[11px] uppercase tracking-[0.18em] text-zinc-400 border-b border-white/10">
+              <th class="px-5 sm:px-7 py-3 font-bold">Lap</th>
+              <th class="px-3 py-3 font-bold">Split</th>
+              <th class="px-3 py-3 font-bold">Total</th>
+              <th class="px-3 py-3 font-bold">Δ vs avg</th>
+              <th class="px-5 sm:px-7 py-3 font-bold text-right">Tag</th>
+            </tr>
+          </thead>
+          <tbody id="lapBody" class="mono"></tbody>
+        </table>
+      </div>
+      <p id="copyMsg" class="hidden px-5 sm:px-7 py-3 text-sm font-bold text-[#b6ff2e] border-t border-white/10">Lap table copied to clipboard.</p>
+    </div>
+  </section>
+
+  <!-- BOTTOM AD -->
+  <div class="mt-8">
+<div class="no-print mx-auto max-w-6xl px-4 sm:px-6 pb-4" role="complementary" aria-label="Advertisement">
+  <div class="mx-auto text-center" style="max-width:300px">
+    <span class="block text-[10px] tracking-[0.18em] uppercase text-slate-400 mb-1.5">Advertisement</span>
+    <div class="flex justify-center overflow-hidden">
+      <script>
+(function(grnp){
+var d = document,
+    s = d.createElement('script'),
+    l = d.currentScript || d.scripts[d.scripts.length - 1];
+s.settings = grnp || {};
+s.src = "\/\/peacefulbicycle.com\/bnXtVJsnd.GElF0oYVWQcY\/Qe\/mf9qu-ZqUtlZk\/PzTHcx1LM\/jWIZwkMTj\/U\/t-NrzmUnyOMsj\/AzydO\/Qx";
+s.async = true;
+s.referrerPolicy = 'no-referrer-when-downgrade';
+l.parentNode.insertBefore(s, l);
+})({})
+</script>
+    </div>
+  </div>
+</div>
+  </div>
+
+  <!-- SEO ARTICLE -->
+  <article id="seo-article" class="mx-auto max-w-4xl px-4 sm:px-6 py-12 text-zinc-300 leading-relaxed">
+    <h2 class="text-3xl font-black text-white tracking-tight">The Stopwatch with Laps: How Splits Turn Raw Time into Real Feedback</h2>
+    <p class="mt-4">A plain stopwatch tells you one thing: how long something took from beginning to end. That single number is useful, but it hides almost everything that actually matters about performance. A stopwatch with laps — like ChronoLap on this page — breaks a session into segments and records a split for each one, so instead of one blunt total you get a story: where you were fast, where you faded, and whether your pacing strategy worked. Whether you are a runner circling a track, a swimmer counting lengths, a coach timing drills, a student practising timed exam questions, or a cook juggling stages of a recipe, lap timing converts effort into evidence.</p>
+
+    <h3 class="text-xl font-extrabold text-white mt-8">What Is a Lap, and What Is a Split?</h3>
+    <p class="mt-3">The two words are often used loosely, so it helps to be precise. A <strong class="text-zinc-100">lap</strong> is one completed segment of your activity — one circuit of the track, one length of the pool, one round of a workout circuit, one set in the gym. The <strong class="text-zinc-100">split</strong> is the time that single segment took on its own. The <strong class="text-zinc-100">cumulative time</strong> (sometimes called the lap total) is the time elapsed since the stopwatch started, measured at the moment you pressed the lap button. ChronoLap shows both numbers side by side for every lap, because each answers a different question. The split tells you how fast that segment was; the cumulative time tells you where you stand in the session as a whole — essential when you are racing a target finish time or following a workout with a hard time cap.</p>
+    <p class="mt-3">Consider a 5-kilometre runner who finishes in 25 minutes. Was that a steady, controlled run or a fast start followed by a struggle? The total cannot say. Five one-kilometre splits can: 4:40, 4:52, 5:05, 5:12, 5:11 reveals a classic positive-split fade, while 5:10, 5:02, 4:58, 4:55, 4:55 shows disciplined negative splitting. Same finish time, completely different lessons. That is the entire argument for lap timing in one example.</p>
+
+    <h3 class="text-xl font-extrabold text-white mt-8">Why Fastest and Slowest Lap Highlights Matter</h3>
+    <p class="mt-3">Scanning a long table of numbers is slow, and the most important rows are the extremes. ChronoLap automatically highlights your <strong class="text-zinc-100">fastest lap in volt green</strong> and your <strong class="text-zinc-100">slowest lap in red</strong>, and recalculates the highlights live every time you record a new lap. This is more than decoration. The fastest lap shows what you are capable of when everything clicks — fresh legs, good rhythm, clean technique. The slowest lap shows where the session cost you time: fatigue, a distraction, a crowded corner of the track, a fumbled transition. Coaches call the gap between the two your <em>consistency spread</em>. A narrow spread means even, repeatable performance; a wide spread means your result is being decided by your worst moments, and training should target those moments first.</p>
+    <p class="mt-3">The delta column deepens the picture by comparing every split against your average lap. Laps shown with a negative delta were quicker than your average; laps with a positive delta were slower. Watching the deltas drift upward through a session is an early-warning sign of fading pace, while deltas that tighten around zero show you settling into a sustainable rhythm. Over several sessions, comparing average lap pace and consistency spread is a far more honest progress metric than comparing finish times alone, because conditions — weather, traffic on the track, how you slept — change from day to day, but your pacing discipline is genuinely yours.</p>
+
+    <h3 class="text-xl font-extrabold text-white mt-8">How to Use ChronoLap</h3>
+    <p class="mt-3">Using the stopwatch takes seconds to learn. Press <strong class="text-zinc-100">START</strong> (or tap the spacebar) when your activity begins. Each time you complete a segment, press <strong class="text-zinc-100">LAP</strong> (or the <span class="kbd">L</span> key) — the current lap is frozen into the table, the lap counter advances, and the main clock keeps running without interruption, so there is no dead time and no fumbling to restart anything. When you finish, press <strong class="text-zinc-100">PAUSE</strong> to stop the clock; you can resume exactly where you left off if the break was not really the end. <strong class="text-zinc-100">RESET</strong> clears the clock and the whole table back to zero. The <strong class="text-zinc-100">Fullscreen</strong> button (or the <span class="kbd">F</span> key) expands the stage to fill your screen, which turns a phone or laptop into a giant, readable scoreboard — ideal for a gym whiteboard substitute, a classroom timer everyone can see, or a coach standing across the track. When the session ends, <strong class="text-zinc-100">Copy laps</strong> puts the whole table on your clipboard as plain text, and <strong class="text-zinc-100">Download CSV</strong> saves it as a spreadsheet-ready file you can open in Excel, Google Sheets, or any training log.</p>
+
+    <h3 class="text-xl font-extrabold text-white mt-8">Who Uses a Lap Stopwatch?</h3>
+    <p class="mt-3"><strong class="text-zinc-100">Runners and cyclists</strong> are the classic users: kilometre or mile splits reveal pacing discipline better than any finish time. <strong class="text-zinc-100">Swimmers</strong> time lengths or sets and watch for the point where stroke fatigue stretches each length. <strong class="text-zinc-100">Coaches and PE teachers</strong> run repeated drills — shuttle runs, agility ladders, circuit stations — and use lap times to group athletes fairly and spot improvement across a term. <strong class="text-zinc-100">Strength athletes</strong> time rest intervals between sets so a "two-minute rest" is actually two minutes, not ninety seconds when eager or four minutes when distracted. <strong class="text-zinc-100">Students and exam candidates</strong> practise pacing: one lap per question section shows exactly which topics eat their minutes. <strong class="text-zinc-100">Speedcubers, gamers and esports players</strong> split solves and rounds to find the phase — inspection, execution, endgame — where time leaks away. <strong class="text-zinc-100">Chefs and brewers</strong> stage multi-step processes where each phase has a target duration. Even <strong class="text-zinc-100">presenters and teachers</strong> use laps silently: one lap per slide section keeps a talk on schedule without clock-watching.</p>
+
+    <h3 class="text-xl font-extrabold text-white mt-8">Pacing Strategies the Splits Can Teach You</h3>
+    <p class="mt-3">Once you can see splits, you can choose a strategy instead of hoping for one. <strong class="text-zinc-100">Even pacing</strong> — every lap within a second or two of the others — is the most energy-efficient approach for most endurance efforts and the easiest to judge with a lap table. <strong class="text-zinc-100">Negative splitting</strong>, running the second half faster than the first, suits races where a controlled start protects a strong finish; your delta column should trend negative late in the session. <strong class="text-zinc-100">Positive splitting</strong> happens naturally in all-out short efforts, but in longer sessions it usually signals an over-ambitious start. Interval training uses laps differently: work intervals and recovery intervals alternate, and the table lets you verify that recoveries stay honest and work intervals stay consistent as fatigue builds — if your fifth work interval is ten percent slower than your first, the session plan, not your effort, may need adjusting. None of these insights require expensive equipment; they require only honest segment times, recorded consistently.</p>
+
+    <h3 class="text-xl font-extrabold text-white mt-8">Accuracy, Privacy and Practical Notes</h3>
+    <p class="mt-3">ChronoLap measures time using your device's own high-resolution clock and displays hundredths of a second, which is well beyond the roughly two-tenths of a second that human reaction time adds when pressing a button — so treat the final digits as a guide to trends rather than laboratory truth, exactly as you would with any hand-operated stopwatch. Everything runs entirely in your browser: there is no account, no upload, and your lap data never leaves your device unless you choose to copy or download it yourself. The timer keeps running accurately even if you glance at another tab, because elapsed time is computed from clock timestamps rather than counted screen refreshes. For best results in a real session, decide in advance what counts as a lap, keep the device somewhere you can reach without breaking stride, and use the keyboard shortcuts if a partner or coach is operating the watch — spacebar to start and pause, L for lap, R for reset, F for fullscreen. Record a few sessions before drawing conclusions; a single workout is an anecdote, but five lap tables side by side are data.</p>
+
+    <h2 class="text-2xl font-black text-white mt-12">Frequently Asked Questions</h2>
+    <div class="mt-5 space-y-3">
+      <details class="rounded-2xl border border-white/10 bg-[#0c0f0b] px-5 py-4">
+        <summary class="cursor-pointer font-bold text-zinc-100 flex items-center justify-between gap-3">What is the difference between a lap and a split on ChronoLap?<span class="faq-arrow text-[#b6ff2e] text-xl leading-none">+</span></summary>
+        <p class="faq-body mt-3 text-sm">A lap is one completed segment of your activity, such as one circuit of a track or one length of a pool. The split is the time that segment took on its own, while the Total column shows the time elapsed since the stopwatch started. ChronoLap records both for every lap so you can judge individual segment speed and overall session progress at the same time.</p>
+      </details>
+      <details class="rounded-2xl border border-white/10 bg-[#0c0f0b] px-5 py-4">
+        <summary class="cursor-pointer font-bold text-zinc-100 flex items-center justify-between gap-3">How are the fastest and slowest laps highlighted?<span class="faq-arrow text-[#b6ff2e] text-xl leading-none">+</span></summary>
+        <p class="faq-body mt-3 text-sm">As soon as you have recorded at least two laps, ChronoLap compares every split automatically. Your fastest lap is highlighted in volt green and your slowest lap in red, in both the table and the stats strip above it. The highlights update live each time you add a lap, so a new personal best segment is marked the moment it happens.</p>
+      </details>
+      <details class="rounded-2xl border border-white/10 bg-[#0c0f0b] px-5 py-4">
+        <summary class="cursor-pointer font-bold text-zinc-100 flex items-center justify-between gap-3">What keyboard shortcuts does ChronoLap support?<span class="faq-arrow text-[#b6ff2e] text-xl leading-none">+</span></summary>
+        <p class="faq-body mt-3 text-sm">Press Space to start or pause the stopwatch, L to record a lap, R to reset the clock and clear the table, and F to toggle fullscreen mode. Keyboard control means a coach or training partner can run the watch without touching the mouse, and you never lose time hunting for a button mid-session.</p>
+      </details>
+      <details class="rounded-2xl border border-white/10 bg-[#0c0f0b] px-5 py-4">
+        <summary class="cursor-pointer font-bold text-zinc-100 flex items-center justify-between gap-3">Can I save or share my lap times?<span class="faq-arrow text-[#b6ff2e] text-xl leading-none">+</span></summary>
+        <p class="faq-body mt-3 text-sm">Yes. The Copy laps button places the full lap table — lap number, split, total and delta versus your average — on your clipboard as plain text you can paste anywhere. The Download CSV button saves the same data as a spreadsheet file that opens in Excel, Google Sheets or any training log app.</p>
+      </details>
+      <details class="rounded-2xl border border-white/10 bg-[#0c0f0b] px-5 py-4">
+        <summary class="cursor-pointer font-bold text-zinc-100 flex items-center justify-between gap-3">Does the stopwatch keep accurate time if I switch tabs?<span class="faq-arrow text-[#b6ff2e] text-xl leading-none">+</span></summary>
+        <p class="faq-body mt-3 text-sm">Yes. ChronoLap calculates elapsed time from your device's clock timestamps rather than by counting screen updates, so switching tabs, minimising the window or letting the screen refresh slow down does not make the timer drift. When you come back, the displayed time is the true elapsed time.</p>
+      </details>
+      <details class="rounded-2xl border border-white/10 bg-[#0c0f0b] px-5 py-4">
+        <summary class="cursor-pointer font-bold text-zinc-100 flex items-center justify-between gap-3">Is ChronoLap free, and do I need an account?<span class="faq-arrow text-[#b6ff2e] text-xl leading-none">+</span></summary>
+        <p class="faq-body mt-3 text-sm">ChronoLap is completely free with unlimited usage. There is no account, no signup, no paywall and no watermark. Everything runs locally in your browser, your lap data is never uploaded anywhere, and it disappears when you reset the watch or close the page unless you copied or downloaded it first.</p>
+      </details>
+    </div>
+  </article>
+</main>
+
+<footer class="border-t border-white/10">
+  <div class="mx-auto max-w-6xl px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-zinc-400">
+    <span class="font-black tracking-tight text-zinc-200">CHRONO<span class="text-[#b6ff2e]">LAP</span></span>
+    <span>Free online stopwatch with laps &amp; splits. Runs 100% in your browser.</span>
+    <a href="#top" class="font-bold text-lime-200 hover:text-white">Back to top ↑</a>
+  </div>
+<p class="fx-credit" style="text-align:center;font-size:12.5px;opacity:.62;margin:10px auto 2px;letter-spacing:.01em">Made by <a href="https://fixoraa.tech" target="_blank" rel="noopener" style="color:inherit;font-weight:700;text-decoration:underline;text-underline-offset:2px">Fixoraa</a></p>
+</footer>
+
+<script id="lib-chronolap">
+/* ChronoLap — pure stopwatch/lap logic. No DOM, no timers. */
+var ChronoLapLib = (function () {
+  function pad(n, w) {
+    var s = String(Math.floor(Math.abs(n)));
+    while (s.length < w) s = '0' + s;
+    return s;
+  }
+
+  /* Format milliseconds as M:SS.cc, or H:MM:SS.cc once an hour is reached. */
+  function formatTime(ms) {
+    if (typeof ms !== 'number' || !isFinite(ms) || ms < 0) ms = 0;
+    var totalCs = Math.floor(ms / 10);
+    var cs = totalCs % 100;
+    var totalSec = Math.floor(totalCs / 100);
+    var sec = totalSec % 60;
+    var totalMin = Math.floor(totalSec / 60);
+    var min = totalMin % 60;
+    var hr = Math.floor(totalMin / 60);
+    if (hr > 0) return hr + ':' + pad(min, 2) + ':' + pad(sec, 2) + '.' + pad(cs, 2);
+    return totalMin + ':' + pad(sec, 2) + '.' + pad(cs, 2);
+  }
+
+  /* Format a signed delta, e.g. +0:03.25 / -0:01.80 (2 decimals, no hour wrap needed for laps). */
+  function formatDelta(ms) {
+    if (typeof ms !== 'number' || !isFinite(ms)) ms = 0;
+    var sign = ms < 0 ? '-' : '+';
+    return sign + formatTime(Math.abs(ms));
+  }
+
+  /* Turn cumulative lap timestamps (ms since start, ascending) into lap rows.
+     Each row: { lap, cumulative, split } where split = time of that lap alone. */
+  function computeLaps(cumulative) {
+    if (!Array.isArray(cumulative)) return [];
+    var rows = [];
+    var prev = 0;
+    for (var i = 0; i < cumulative.length; i++) {
+      var c = cumulative[i];
+      if (typeof c !== 'number' || !isFinite(c) || c < 0) continue;
+      if (c < prev) c = prev; /* timestamps must never go backwards */
+      rows.push({ lap: rows.length + 1, cumulative: c, split: c - prev });
+      prev = c;
+    }
+    return rows;
+  }
+
+  /* Analyse lap rows: fastest / slowest lap numbers (need >= 2 laps to differ),
+     average split, total time, and each lap's delta vs the average. */
+  function analyzeLaps(rows) {
+    var out = {
+      count: 0, total: 0, average: 0,
+      fastestLap: null, slowestLap: null,
+      fastestSplit: null, slowestSplit: null,
+      deltas: []
+    };
+    if (!Array.isArray(rows) || rows.length === 0) return out;
+    out.count = rows.length;
+    out.total = rows[rows.length - 1].cumulative;
+    var sum = 0, i;
+    for (i = 0; i < rows.length; i++) sum += rows[i].split;
+    out.average = rows.length ? sum / rows.length : 0;
+    var f = 0, s = 0;
+    for (i = 1; i < rows.length; i++) {
+      if (rows[i].split < rows[f].split) f = i;
+      if (rows[i].split > rows[s].split) s = i;
+    }
+    out.fastestLap = rows[f].lap;
+    out.fastestSplit = rows[f].split;
+    out.slowestLap = rows[s].lap;
+    out.slowestSplit = rows[s].split;
+    if (rows.length < 2 || f === s) { out.slowestLap = out.fastestLap; }
+    out.deltas = rows.map(function (r) { return r.split - out.average; });
+    return out;
+  }
+
+  /* Elapsed time given a start stamp, accumulated pause offset and now. */
+  function elapsedMs(startStamp, accumulated, now, running) {
+    if (!running) return Math.max(0, accumulated || 0);
+    if (typeof startStamp !== 'number' || typeof now !== 'number') return Math.max(0, accumulated || 0);
+    return Math.max(0, (accumulated || 0) + (now - startStamp));
+  }
+
+  /* Build CSV text for a lap table (header + one line per lap). */
+  function lapsToCsv(rows, analysis) {
+    var lines = ['Lap,Split,Cumulative,Delta vs Average'];
+    if (!Array.isArray(rows)) return lines[0];
+    var a = analysis || analyzeLaps(rows);
+    for (var i = 0; i < rows.length; i++) {
+      lines.push(rows[i].lap + ',' + formatTime(rows[i].split) + ',' +
+        formatTime(rows[i].cumulative) + ',' + formatDelta(a.deltas[i] || 0));
+    }
+    return lines.join('\n');
+  }
+
+  return {
+    formatTime: formatTime,
+    formatDelta: formatDelta,
+    computeLaps: computeLaps,
+    analyzeLaps: analyzeLaps,
+    elapsedMs: elapsedMs,
+    lapsToCsv: lapsToCsv
+  };
+})();
+
+if (typeof module !== 'undefined' && module.exports) { module.exports = ChronoLapLib; }
+
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    { "@type": "Question", "name": "What is the difference between a lap and a split on ChronoLap?", "acceptedAnswer": { "@type": "Answer", "text": "A lap is one completed segment of your activity, such as one circuit of a track or one length of a pool. The split is the time that segment took on its own, while the Total column shows the time elapsed since the stopwatch started. ChronoLap records both for every lap so you can judge individual segment speed and overall session progress at the same time." } },
+    { "@type": "Question", "name": "How are the fastest and slowest laps highlighted?", "acceptedAnswer": { "@type": "Answer", "text": "As soon as you have recorded at least two laps, ChronoLap compares every split automatically. Your fastest lap is highlighted in volt green and your slowest lap in red, in both the table and the stats strip above it. The highlights update live each time you add a lap, so a new personal best segment is marked the moment it happens." } },
+    { "@type": "Question", "name": "What keyboard shortcuts does ChronoLap support?", "acceptedAnswer": { "@type": "Answer", "text": "Press Space to start or pause the stopwatch, L to record a lap, R to reset the clock and clear the table, and F to toggle fullscreen mode. Keyboard control means a coach or training partner can run the watch without touching the mouse, and you never lose time hunting for a button mid-session." } },
+    { "@type": "Question", "name": "Can I save or share my lap times?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. The Copy laps button places the full lap table — lap number, split, total and delta versus your average — on your clipboard as plain text you can paste anywhere. The Download CSV button saves the same data as a spreadsheet file that opens in Excel, Google Sheets or any training log app." } },
+    { "@type": "Question", "name": "Does the stopwatch keep accurate time if I switch tabs?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. ChronoLap calculates elapsed time from your device's clock timestamps rather than by counting screen updates, so switching tabs, minimising the window or letting the screen refresh slow down does not make the timer drift. When you come back, the displayed time is the true elapsed time." } },
+    { "@type": "Question", "name": "Is ChronoLap free, and do I need an account?", "acceptedAnswer": { "@type": "Answer", "text": "ChronoLap is completely free with unlimited usage. There is no account, no signup, no paywall and no watermark. Everything runs locally in your browser, your lap data is never uploaded anywhere, and it disappears when you reset the watch or close the page unless you copied or downloaded it first." } }
+  ]
+}
+</script>
+
+<script>
+(function () {
+  var L = ChronoLapLib;
+  var display = document.getElementById('display');
+  var currentLapEl = document.getElementById('currentLap');
+  var lapCounterEl = document.getElementById('lapCounter');
+  var statusLabel = document.getElementById('statusLabel');
+  var btnStart = document.getElementById('btnStart');
+  var btnLap = document.getElementById('btnLap');
+  var btnReset = document.getElementById('btnReset');
+  var btnFullscreen = document.getElementById('btnFullscreen');
+  var btnCopy = document.getElementById('btnCopy');
+  var btnCsv = document.getElementById('btnCsv');
+  var lapBody = document.getElementById('lapBody');
+  var lapTable = document.getElementById('lapTable');
+  var emptyState = document.getElementById('emptyState');
+  var copyMsg = document.getElementById('copyMsg');
+  var statFast = document.getElementById('statFast');
+  var statSlow = document.getElementById('statSlow');
+  var statAvg = document.getElementById('statAvg');
+  var statCount = document.getElementById('statCount');
+
+  var running = false;
+  var startStamp = 0;
+  var accumulated = 0;
+  var cumulative = []; /* lap timestamps in ms */
+  var rafId = null;
+
+  function nowMs() { return performance.now(); }
+  function elapsed() { return L.elapsedMs(startStamp, accumulated, nowMs(), running); }
+
+  function render() {
+    var e = elapsed();
+    display.textContent = L.formatTime(e);
+    var lastMark = cumulative.length ? cumulative[cumulative.length - 1] : 0;
+    currentLapEl.textContent = L.formatTime(Math.max(0, e - lastMark));
+    lapCounterEl.textContent = String(cumulative.length + 1);
+  }
+
+  function tick() {
+    render();
+    if (running) rafId = requestAnimationFrame(tick);
+  }
+
+  function setControls() {
+    btnStart.textContent = running ? '⏸ PAUSE' : (accumulated > 0 || cumulative.length ? '▶ RESUME' : '▶ START');
+    btnLap.disabled = !running;
+    btnReset.disabled = !running && accumulated === 0 && cumulative.length === 0;
+    var has = cumulative.length > 0;
+    btnCopy.disabled = !has;
+    btnCsv.disabled = !has;
+    statusLabel.textContent = running ? 'Running — on the clock' : (accumulated > 0 ? 'Paused' : 'Ready — press start');
+  }
+
+  function renderTable() {
+    var rows = L.computeLaps(cumulative);
+    var a = L.analyzeLaps(rows);
+    statCount.textContent = String(rows.length);
+    if (!rows.length) {
+      lapTable.classList.add('hidden');
+      emptyState.classList.remove('hidden');
+      statFast.textContent = '—'; statSlow.textContent = '—'; statAvg.textContent = '—';
+      lapBody.innerHTML = '';
+      return;
+    }
+    emptyState.classList.add('hidden');
+    lapTable.classList.remove('hidden');
+    statFast.textContent = '#' + a.fastestLap + ' · ' + L.formatTime(a.fastestSplit);
+    statSlow.textContent = rows.length > 1 ? ('#' + a.slowestLap + ' · ' + L.formatTime(a.slowestSplit)) : '—';
+    statAvg.textContent = L.formatTime(a.average);
+    var html = '';
+    for (var i = rows.length - 1; i >= 0; i--) {
+      var r = rows[i];
+      var cls = '', tag = '';
+      if (rows.length > 1 && r.lap === a.fastestLap) { cls = 'row-fast'; tag = '<span class="text-[#b6ff2e] font-bold">FASTEST</span>'; }
+      else if (rows.length > 1 && r.lap === a.slowestLap) { cls = 'row-slow'; tag = '<span class="text-red-300 font-bold">SLOWEST</span>'; }
+      html += '<tr class="border-b border-white/5 ' + cls + '">' +
+        '<td class="px-5 sm:px-7 py-2.5 font-bold text-zinc-100">' + r.lap + '</td>' +
+        '<td class="px-3 py-2.5 text-zinc-100">' + L.formatTime(r.split) + '</td>' +
+        '<td class="px-3 py-2.5 text-zinc-400">' + L.formatTime(r.cumulative) + '</td>' +
+        '<td class="px-3 py-2.5 ' + (a.deltas[i] <= 0 ? 'text-lime-300' : 'text-red-300') + '">' + L.formatDelta(a.deltas[i]) + '</td>' +
+        '<td class="px-5 sm:px-7 py-2.5 text-right text-xs">' + tag + '</td></tr>';
+    }
+    lapBody.innerHTML = html;
+  }
+
+  function startPause() {
+    if (running) {
+      accumulated = elapsed();
+      running = false;
+      if (rafId) cancelAnimationFrame(rafId);
+    } else {
+      startStamp = nowMs();
+      running = true;
+      rafId = requestAnimationFrame(tick);
+    }
+    render(); setControls();
+  }
+
+  function recordLap() {
+    if (!running) return;
+    cumulative.push(elapsed());
+    renderTable(); render(); setControls();
+  }
+
+  function resetAll() {
+    running = false;
+    if (rafId) cancelAnimationFrame(rafId);
+    accumulated = 0; startStamp = 0; cumulative = [];
+    copyMsg.classList.add('hidden');
+    renderTable(); render(); setControls();
+  }
+
+  function toggleFullscreen() {
+    if (document.fullscreenElement) { document.exitFullscreen(); }
+    else if (document.documentElement.requestFullscreen) { document.documentElement.requestFullscreen(); }
+  }
+
+  btnStart.addEventListener('click', startPause);
+  btnLap.addEventListener('click', recordLap);
+  btnReset.addEventListener('click', resetAll);
+  btnFullscreen.addEventListener('click', toggleFullscreen);
+
+  btnCsv.addEventListener('click', function () {
+    var rows = L.computeLaps(cumulative);
+    if (!rows.length) return;
+    var blob = new Blob([L.lapsToCsv(rows)], { type: 'text/csv' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = 'chronolap-laps.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 500);
+  });
+
+  btnCopy.addEventListener('click', function () {
+    var rows = L.computeLaps(cumulative);
+    if (!rows.length) return;
+    var text = L.lapsToCsv(rows).split('\n').join('\n');
+    function done() { copyMsg.classList.remove('hidden'); setTimeout(function () { copyMsg.classList.add('hidden'); }, 2500); }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, done);
+    } else {
+      var ta = document.createElement('textarea');
+      ta.value = text; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); } catch (e) {}
+      ta.remove(); done();
+    }
+  });
+
+  document.addEventListener('keydown', function (ev) {
+    var tag = (ev.target && ev.target.tagName) || '';
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    if (ev.code === 'Space') { ev.preventDefault(); startPause(); }
+    else if (ev.key === 'l' || ev.key === 'L') { recordLap(); }
+    else if (ev.key === 'r' || ev.key === 'R') { if (!btnReset.disabled) resetAll(); }
+    else if (ev.key === 'f' || ev.key === 'F') { toggleFullscreen(); }
+  });
+
+  renderTable(); render(); setControls();
+})();
+</script>
+</body>
+</html>

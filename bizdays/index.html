@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="canonical" href="https://time.fixoraa.tech/bizdays//">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BizDays — Business Days Calculator | Count &amp; Add Working Days</title>
+<meta name="description" content="BizDays is a free business days calculator: count working days between two dates excluding weekends and your own holiday list, add or subtract workdays from any date, and see a per-month breakdown.">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{ --navy:#0a1f44; --navy2:#10295a; --ink:#16233f; --paper:#ffffff; --rule:#d7deeb; --gold:#c9a227; }
+  html{ scroll-behavior:smooth; }
+  body{ font-family:'Archivo',system-ui,sans-serif; color:var(--ink); background:#eef1f7; }
+  .mono{ font-family:'IBM Plex Mono',ui-monospace,monospace; }
+  .ledger{ background:var(--paper); background-image:repeating-linear-gradient(to bottom, transparent 0, transparent 35px, rgba(16,41,90,.055) 35px, rgba(16,41,90,.055) 36px); }
+  .ledger-head{ background:var(--navy); color:#fff; }
+  .tab-btn{ transition:all .15s ease; }
+  .tab-btn[aria-selected="true"]{ background:var(--navy); color:#fff; }
+  .tab-btn[aria-selected="false"]{ background:#e6ebf4; color:var(--navy); }
+  input[type="date"], input[type="number"], textarea, select{ outline:none; }
+  input[type="date"]:focus, input[type="number"]:focus, textarea:focus{ border-color:var(--navy2) !important; box-shadow:0 0 0 3px rgba(16,41,90,.15); }
+  .cal-day{ aspect-ratio:1/1; display:flex; align-items:center; justify-content:center; font-size:11px; border-radius:4px; }
+  .cal-biz{ background:#e8eefb; color:var(--navy); font-weight:600; }
+  .cal-wknd{ background:#f3f4f6; color:#9aa3b2; }
+  .cal-hol{ background:#fbe9e9; color:#9b2226; font-weight:700; text-decoration:line-through; }
+  .cal-mark{ box-shadow:inset 0 0 0 2px var(--gold); }
+  details.faq summary{ cursor:pointer; list-style:none; }
+  details.faq summary::-webkit-details-marker{ display:none; }
+  details.faq[open ] summary .chev{ transform:rotate(180deg); }
+  .chev{ transition:transform .2s ease; }
+  @media print{ .no-print{ display:none !important; } }
+</style>
+<script id="lib-bizdays">
+
+var BizDaysLib = (function () {
+  'use strict';
+
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+
+  // Parse a strict YYYY-MM-DD string into a UTC Date. Returns null when invalid.
+  function parseISO(str) {
+    if (typeof str !== 'string') return null;
+    var m = /^\s*(\d{4})-(\d{2})-(\d{2})\s*$/.exec(str);
+    if (!m) return null;
+    var y = parseInt(m[1], 10), mo = parseInt(m[2], 10), d = parseInt(m[3], 10);
+    if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+    var dt = new Date(Date.UTC(y, mo - 1, d));
+    if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) return null;
+    return dt;
+  }
+
+  function toISO(dt) {
+    return dt.getUTCFullYear() + '-' + pad(dt.getUTCMonth() + 1) + '-' + pad(dt.getUTCDate());
+  }
+
+  function isValidISO(str) { return parseISO(str) !== null; }
+
+  // 0 = Sunday ... 6 = Saturday (UTC)
+  function dayOfWeekISO(iso) {
+    var dt = parseISO(iso);
+    return dt ? dt.getUTCDay() : -1;
+  }
+
+  function isWeekendISO(iso) {
+    var dow = dayOfWeekISO(iso);
+    return dow === 0 || dow === 6;
+  }
+
+  function addCalendarDaysISO(iso, n) {
+    var dt = parseISO(iso);
+    if (!dt || typeof n !== 'number' || !isFinite(n)) return null;
+    dt.setUTCDate(dt.getUTCDate() + Math.trunc(n));
+    return toISO(dt);
+  }
+
+  // Normalise a holiday list: accepts an array of strings or a newline/comma
+  // separated string. Keeps only valid, unique ISO dates, sorted ascending.
+  function normalizeHolidays(input) {
+    var raw = [];
+    if (Array.isArray(input)) raw = input.slice();
+    else if (typeof input === 'string') raw = input.split(/[\n,;]+/);
+    else if (input == null) raw = [];
+    var seen = {}, out = [];
+    for (var i = 0; i < raw.length; i++) {
+      var s = String(raw[i]).trim();
+      if (!s) continue;
+      // Allow "2026-01-01 New Year's Day" style lines: take the leading date token.
+      var token = s.split(/\s+/)[0];
+      var dt = parseISO(token);
+      if (!dt) continue;
+      var iso = toISO(dt);
+      if (!seen[iso]) { seen[iso] = true; out.push(iso); }
+    }
+    out.sort();
+    return out;
+  }
+
+  function toHolidaySet(holidays) {
+    var list = normalizeHolidays(holidays);
+    var set = {};
+    for (var i = 0; i < list.length; i++) set[list[i]] = true;
+    return set;
+  }
+
+  function isHolidayISO(iso, holidays) {
+    var set = Array.isArray(holidays) || typeof holidays === 'string' ? toHolidaySet(holidays) : (holidays || {});
+    return !!set[iso];
+  }
+
+  function isBusinessDayISO(iso, holidays) {
+    if (!isValidISO(iso)) return false;
+    if (isWeekendISO(iso)) return false;
+    return !isHolidayISO(iso, holidays);
+  }
+
+  var MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
+    'August', 'September', 'October', 'November', 'December'];
+  var DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+  function monthLabel(key) {
+    var parts = key.split('-');
+    var mo = parseInt(parts[1], 10);
+    return MONTH_NAMES[mo - 1] + ' ' + parts[0];
+  }
+
+  function formatLong(iso) {
+    var dt = parseISO(iso);
+    if (!dt) return '';
+    return DAY_NAMES[dt.getUTCDay()] + ', ' + MONTH_NAMES[dt.getUTCMonth()] + ' ' +
+      dt.getUTCDate() + ', ' + dt.getUTCFullYear();
+  }
+
+  /**
+   * Count days between two dates (both endpoints handled by options).
+   * options: { includeStart (default true), includeEnd (default true) }
+   * Returns { ok, error, start, end, swapped, totalDays, businessDays,
+   *           weekendDays, holidayDays, weekdayHolidays, perMonth: [...] }
+   * holidayDays counts listed holidays inside the range (any day of week);
+   * weekdayHolidays counts those that fall Mon-Fri (they reduce business days).
+   */
+  function countBetween(startISO, endISO, holidays, options) {
+    var opts = options || {};
+    var includeStart = opts.includeStart !== false;
+    var includeEnd = opts.includeEnd !== false;
+    var s = parseISO(startISO), e = parseISO(endISO);
+    if (!s || !e) return { ok: false, error: 'Please choose two valid dates.' };
+    var swapped = false;
+    if (e.getTime() < s.getTime()) { var tmp = s; s = e; e = tmp; swapped = true; }
+    var set = toHolidaySet(holidays);
+
+    var from = new Date(s.getTime());
+    if (!includeStart) from.setUTCDate(from.getUTCDate() + 1);
+    var to = new Date(e.getTime());
+    if (!includeEnd) to.setUTCDate(to.getUTCDate() - 1);
+
+    var result = {
+      ok: true, error: '', swapped: swapped,
+      start: toISO(s), end: toISO(e),
+      totalDays: 0, businessDays: 0, weekendDays: 0,
+      holidayDays: 0, weekdayHolidays: 0, perMonth: []
+    };
+    if (to.getTime() < from.getTime()) return result;
+
+    var byMonth = {}, order = [];
+    var cur = new Date(from.getTime());
+    while (cur.getTime() <= to.getTime()) {
+      var iso = toISO(cur);
+      var key = iso.slice(0, 7);
+      if (!byMonth[key]) {
+        byMonth[key] = { month: key, label: monthLabel(key), totalDays: 0, businessDays: 0, weekendDays: 0, holidayDays: 0 };
+        order.push(key);
+      }
+      var row = byMonth[key];
+      var dow = cur.getUTCDay();
+      var weekend = (dow === 0 || dow === 6);
+      var holiday = !!set[iso];
+      row.totalDays++;
+      result.totalDays++;
+      if (weekend) { row.weekendDays++; result.weekendDays++; }
+      if (holiday) {
+        row.holidayDays++; result.holidayDays++;
+        if (!weekend) result.weekdayHolidays++;
+      }
+      if (!weekend && !holiday) { row.businessDays++; result.businessDays++; }
+      cur.setUTCDate(cur.getUTCDate() + 1);
+    }
+    for (var i = 0; i < order.length; i++) result.perMonth.push(byMonth[order[i]]);
+    return result;
+  }
+
+  /**
+   * Move n business days from a start date (n may be negative or zero).
+   * The start date itself is never counted; each step lands on the next
+   * business day in the direction of travel. With n = 0 the start date is
+   * returned unchanged (even if it is a weekend/holiday).
+   * Returns { ok, error, start, days, result, resultLong, steps } where steps
+   * is the number of calendar days travelled.
+   */
+  function addWorkdays(startISO, n, holidays) {
+    var s = parseISO(startISO);
+    if (!s) return { ok: false, error: 'Please choose a valid start date.' };
+    if (typeof n !== 'number' || !isFinite(n) || Math.trunc(n) !== n) {
+      return { ok: false, error: 'Enter a whole number of workdays.' };
+    }
+    var set = toHolidaySet(holidays);
+    var remaining = Math.abs(n);
+    var dir = n > 0 ? 1 : (n < 0 ? -1 : 0);
+    var cur = new Date(s.getTime());
+    var steps = 0;
+    while (remaining > 0) {
+      cur.setUTCDate(cur.getUTCDate() + dir);
+      steps++;
+      var iso = toISO(cur);
+      var dow = cur.getUTCDay();
+      if (dow !== 0 && dow !== 6 && !set[iso]) remaining--;
+      if (steps > 366000) return { ok: false, error: 'That range is too large to calculate.' };
+    }
+    var resISO = toISO(cur);
+    return {
+      ok: true, error: '', start: toISO(s), days: n,
+      result: resISO, resultLong: formatLong(resISO),
+      resultDow: DAY_NAMES[cur.getUTCDay()], steps: steps
+    };
+  }
+
+  /** Business days strictly needed to reach a deadline helper: alias of count. */
+  function businessDaysBetween(startISO, endISO, holidays) {
+    var r = countBetween(startISO, endISO, holidays, {});
+    return r.ok ? r.businessDays : null;
+  }
+
+  return {
+    parseISO: parseISO,
+    toISO: toISO,
+    isValidISO: isValidISO,
+    dayOfWeekISO: dayOfWeekISO,
+    isWeekendISO: isWeekendISO,
+    addCalendarDaysISO: addCalendarDaysISO,
+    normalizeHolidays: normalizeHolidays,
+    isHolidayISO: isHolidayISO,
+    isBusinessDayISO: isBusinessDayISO,
+    countBetween: countBetween,
+    addWorkdays: addWorkdays,
+    businessDaysBetween: businessDaysBetween,
+    formatLong: formatLong,
+    MONTH_NAMES: MONTH_NAMES,
+    DAY_NAMES: DAY_NAMES
+  };
+})();
+
+if (typeof module !== 'undefined' && module.exports) { module.exports = BizDaysLib; }
+
+</script>
+</head>
+<body id="top" class="antialiased">
+
+<!-- ===== Header ===== -->
+<header class="no-print sticky top-0 z-40 shadow-md" style="background:var(--navy)">
+  <div class="mx-auto max-w-6xl px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+    <a href="#top" class="flex items-center gap-2.5 text-white min-w-0">
+      <span class="inline-flex items-center justify-center w-9 h-9 rounded-md shrink-0" style="background:var(--gold)" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" fill="#0a1f44"/><rect x="3" y="5" width="18" height="5" fill="#ffffff" opacity=".28"/><rect x="7" y="2.5" width="2.4" height="5" rx="1.2" fill="#fff"/><rect x="14.6" y="2.5" width="2.4" height="5" rx="1.2" fill="#fff"/><path d="M7 14.5l3 3 7-7" stroke="#c9a227" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <span class="leading-tight">
+        <span class="block font-black tracking-tight text-lg">BizDays</span>
+        <span class="hidden sm:block text-[10px] uppercase tracking-[0.22em] text-blue-200">Business Days Calculator</span>
+      </span>
+    </a>
+    <nav class="flex items-center gap-1 sm:gap-2 text-sm font-semibold" aria-label="Main">
+      <a href="#top" class="text-white/90 hover:text-white px-3 py-2 rounded-md hover:bg-white/10">Home</a>
+      <a href="https://fixoraa.tech" class="text-white bg-white/10 hover:bg-white/20 px-3 py-2 rounded-md border border-white/20">More Tools</a>
+    </nav>
+  </div>
+  <div style="height:3px;background:var(--gold)"></div>
+</header>
+
+<div class="no-print mx-auto max-w-6xl px-4 sm:px-6 pt-4" role="complementary" aria-label="Advertisement">
+  <div class="mx-auto text-center" style="max-width:728px">
+    <span class="block text-[10px] tracking-[0.18em] uppercase text-slate-400 mb-1.5">Advertisement</span>
+    <div class="flex justify-center overflow-hidden">
+      <div class="origin-top scale-[0.44] sm:scale-100 shrink-0">
+        <script>
+          atOptions = { 'key' : '4e68ac77881c17fe128a46565d9a4e8c', 'format' : 'iframe', 'height' : 90, 'width' : 728, 'params' : {} };
+        </script>
+        <script src="https://www.highrevenueformat.com/4e68ac77881c17fe128a46565d9a4e8c/invoke.js"></script>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Hero ===== -->
+<section class="mx-auto max-w-6xl px-4 sm:px-6 pt-8 sm:pt-10 pb-2 text-center">
+  <span class="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full text-white" style="background:var(--navy2)">✓ Unlimited Free Usage</span>
+  <h1 class="mt-4 text-3xl sm:text-5xl font-black tracking-tight" style="color:var(--navy)">Count business days.<br class="hidden sm:block"> Skip weekends &amp; holidays.</h1>
+  <p class="mt-3 max-w-2xl mx-auto text-slate-600 text-base sm:text-lg">Count working days between two dates, or add and subtract workdays from any date — with your own custom holiday list and a per-month ledger breakdown. No signup, nothing leaves your browser.</p>
+</section>
+
+<!-- ===== Tool ===== -->
+<main class="mx-auto max-w-6xl px-4 sm:px-6 py-6">
+  <div class="ledger rounded-xl shadow-lg border overflow-hidden" style="border-color:var(--rule)">
+    <div class="ledger-head px-5 sm:px-7 py-4 flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h2 class="font-extrabold text-lg sm:text-xl tracking-tight">Working-Day Ledger</h2>
+        <p class="text-blue-200 text-xs sm:text-sm">Saturdays and Sundays are ruled out automatically. Add holidays below and they are ruled out too.</p>
+      </div>
+      <span class="mono text-xs bg-white/10 border border-white/20 rounded px-2.5 py-1.5" id="todayChip"></span>
+    </div>
+
+    <!-- Mode tabs -->
+    <div class="px-5 sm:px-7 pt-5">
+      <div class="inline-flex rounded-lg overflow-hidden border" style="border-color:var(--rule)" role="tablist" aria-label="Calculator mode">
+        <button type="button" id="tabCount" class="tab-btn px-4 sm:px-5 py-2.5 text-sm font-bold" role="tab" aria-selected="true">Count Between Dates</button>
+        <button type="button" id="tabAdd" class="tab-btn px-4 sm:px-5 py-2.5 text-sm font-bold" role="tab" aria-selected="false">Add / Subtract Workdays</button>
+      </div>
+    </div>
+
+    <div class="grid lg:grid-cols-5 gap-0">
+      <!-- Left: inputs -->
+      <div class="lg:col-span-3 px-5 sm:px-7 py-6 space-y-7">
+
+        <!-- COUNT MODE -->
+        <section id="panelCount" role="tabpanel" aria-labelledby="tabCount">
+          <div class="grid sm:grid-cols-[1fr_auto_1fr] gap-3 items-end">
+            <div>
+              <label for="startDate" class="block text-xs font-bold uppercase tracking-wider mb-1.5" style="color:var(--navy)">Start date</label>
+              <input type="date" id="startDate" class="w-full border rounded-lg px-3 py-2.5 mono text-sm bg-white" style="border-color:var(--rule)">
+            </div>
+            <button type="button" id="swapBtn" title="Swap start and end dates" class="mx-auto mb-1 w-10 h-10 rounded-full border bg-white font-bold hover:bg-slate-50" style="border-color:var(--rule);color:var(--navy)" aria-label="Swap dates">⇄</button>
+            <div>
+              <label for="endDate" class="block text-xs font-bold uppercase tracking-wider mb-1.5" style="color:var(--navy)">End date</label>
+              <input type="date" id="endDate" class="w-full border rounded-lg px-3 py-2.5 mono text-sm bg-white" style="border-color:var(--rule)">
+            </div>
+          </div>
+          <div class="flex flex-wrap gap-x-5 gap-y-2 mt-4 text-sm">
+            <label class="inline-flex items-center gap-2 cursor-pointer"><input type="checkbox" id="includeStart" checked class="w-4 h-4 accent-[#0a1f44]"> Include start date</label>
+            <label class="inline-flex items-center gap-2 cursor-pointer"><input type="checkbox" id="includeEnd" checked class="w-4 h-4 accent-[#0a1f44]"> Include end date</label>
+          </div>
+          <div class="flex flex-wrap gap-2 mt-4" aria-label="Quick ranges">
+            <button type="button" data-range="week" class="rangeBtn text-xs font-bold px-3 py-1.5 rounded-full border bg-white hover:bg-slate-50" style="border-color:var(--rule)">This week</button>
+            <button type="button" data-range="month" class="rangeBtn text-xs font-bold px-3 py-1.5 rounded-full border bg-white hover:bg-slate-50" style="border-color:var(--rule)">This month</button>
+            <button type="button" data-range="next30" class="rangeBtn text-xs font-bold px-3 py-1.5 rounded-full border bg-white hover:bg-slate-50" style="border-color:var(--rule)">Next 30 days</button>
+            <button type="button" data-range="quarter" class="rangeBtn text-xs font-bold px-3 py-1.5 rounded-full border bg-white hover:bg-slate-50" style="border-color:var(--rule)">This quarter</button>
+            <button type="button" data-range="year" class="rangeBtn text-xs font-bold px-3 py-1.5 rounded-full border bg-white hover:bg-slate-50" style="border-color:var(--rule)">This year</button>
+          </div>
+          <p id="countError" class="hidden mt-4 text-sm font-semibold text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2" role="alert"></p>
+
+          <!-- Count results -->
+          <div id="countResults" class="mt-6">
+            <div class="grid grid-cols-2 sm:grid-cols-4 border rounded-lg overflow-hidden text-center" style="border-color:var(--rule)">
+              <div class="p-4 bg-white border-b sm:border-b-0 border-r" style="border-color:var(--rule)">
+                <div class="mono text-3xl sm:text-4xl font-semibold" style="color:var(--navy)" id="resBiz">–</div>
+                <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500 mt-1">Business days</div>
+              </div>
+              <div class="p-4 bg-white border-b sm:border-b-0 sm:border-r" style="border-color:var(--rule)">
+                <div class="mono text-3xl sm:text-4xl font-semibold text-slate-700" id="resTotal">–</div>
+                <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500 mt-1">Calendar days</div>
+              </div>
+              <div class="p-4 bg-white border-r" style="border-color:var(--rule)">
+                <div class="mono text-3xl sm:text-4xl font-semibold text-slate-700" id="resWknd">–</div>
+                <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500 mt-1">Weekend days</div>
+              </div>
+              <div class="p-4 bg-white">
+                <div class="mono text-3xl sm:text-4xl font-semibold text-red-700" id="resHol">–</div>
+                <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500 mt-1">Holidays (Mon–Fri)</div>
+              </div>
+            </div>
+            <p id="countSummary" class="mt-3 text-sm text-slate-600"></p>
+
+            <h3 class="mt-6 text-sm font-extrabold uppercase tracking-wider" style="color:var(--navy)">Per-month breakdown</h3>
+            <div class="overflow-x-auto mt-2 border rounded-lg" style="border-color:var(--rule)">
+              <table class="w-full text-sm bg-white min-w-[520px]">
+                <thead>
+                  <tr class="text-left text-xs uppercase tracking-wider text-white" style="background:var(--navy2)">
+                    <th class="px-3 py-2.5 font-bold">Month</th>
+                    <th class="px-3 py-2.5 font-bold text-right">Calendar</th>
+                    <th class="px-3 py-2.5 font-bold text-right">Business</th>
+                    <th class="px-3 py-2.5 font-bold text-right">Weekend</th>
+                    <th class="px-3 py-2.5 font-bold text-right">Holidays</th>
+                  </tr>
+                </thead>
+                <tbody id="monthBody" class="mono"></tbody>
+                <tfoot id="monthFoot"></tfoot>
+              </table>
+            </div>
+            <p id="monthEmpty" class="hidden mt-3 text-sm text-slate-500">Pick two dates above and the ledger will itemise every month in the range.</p>
+          </div>
+        </section>
+
+        <!-- ADD MODE -->
+        <section id="panelAdd" class="hidden" role="tabpanel" aria-labelledby="tabAdd">
+          <div class="grid sm:grid-cols-2 gap-3">
+            <div>
+              <label for="addStart" class="block text-xs font-bold uppercase tracking-wider mb-1.5" style="color:var(--navy)">Start date</label>
+              <input type="date" id="addStart" class="w-full border rounded-lg px-3 py-2.5 mono text-sm bg-white" style="border-color:var(--rule)">
+            </div>
+            <div>
+              <label for="addDays" class="block text-xs font-bold uppercase tracking-wider mb-1.5" style="color:var(--navy)">Workdays to move</label>
+              <div class="flex">
+                <button type="button" id="minusBtn" class="w-11 border rounded-l-lg bg-white font-black text-lg hover:bg-slate-50" style="border-color:var(--rule)" aria-label="Subtract one workday">−</button>
+                <input type="number" id="addDays" value="10" step="1" class="w-full border-y mono text-center text-sm py-2.5 bg-white" style="border-color:var(--rule)" aria-label="Number of workdays, negative to go backwards">
+                <button type="button" id="plusBtn" class="w-11 border rounded-r-lg bg-white font-black text-lg hover:bg-slate-50" style="border-color:var(--rule)" aria-label="Add one workday">+</button>
+              </div>
+              <p class="text-xs text-slate-500 mt-1.5">Positive moves forward, negative moves backward. The start day itself is never counted.</p>
+            </div>
+          </div>
+          <div class="flex flex-wrap gap-2 mt-4">
+            <button type="button" data-addpreset="5" class="addPreset text-xs font-bold px-3 py-1.5 rounded-full border bg-white hover:bg-slate-50" style="border-color:var(--rule)">+5 (one week)</button>
+            <button type="button" data-addpreset="10" class="addPreset text-xs font-bold px-3 py-1.5 rounded-full border bg-white hover:bg-slate-50" style="border-color:var(--rule)">+10</button>
+            <button type="button" data-addpreset="20" class="addPreset text-xs font-bold px-3 py-1.5 rounded-full border bg-white hover:bg-slate-50" style="border-color:var(--rule)">+20</button>
+            <button type="button" data-addpreset="-5" class="addPreset text-xs font-bold px-3 py-1.5 rounded-full border bg-white hover:bg-slate-50" style="border-color:var(--rule)">−5</button>
+            <button type="button" data-addpreset="-10" class="addPreset text-xs font-bold px-3 py-1.5 rounded-full border bg-white hover:bg-slate-50" style="border-color:var(--rule)">−10</button>
+          </div>
+          <p id="addError" class="hidden mt-4 text-sm font-semibold text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2" role="alert"></p>
+          <div id="addResult" class="mt-6 border rounded-lg bg-white p-5" style="border-color:var(--rule)">
+            <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500">You land on</div>
+            <div class="text-2xl sm:text-3xl font-black mt-1" style="color:var(--navy)" id="addResultDate">–</div>
+            <p class="text-sm text-slate-600 mt-2" id="addResultMeta">Choose a start date and a number of workdays.</p>
+          </div>
+        </section>
+
+        <div class="flex flex-wrap gap-2 pt-1 no-print">
+          <button type="button" id="copyBtn" class="text-sm font-bold px-4 py-2.5 rounded-lg text-white hover:opacity-90" style="background:var(--navy)">Copy summary</button>
+          <button type="button" id="printBtn" class="text-sm font-bold px-4 py-2.5 rounded-lg border bg-white hover:bg-slate-50" style="border-color:var(--rule);color:var(--navy)">Print ledger</button>
+          <span id="copyMsg" class="text-sm font-semibold text-emerald-700 self-center hidden">Copied ✓</span>
+        </div>
+      </div>
+
+      <!-- Right: holidays + calendar -->
+      <aside class="lg:col-span-2 border-t lg:border-t-0 lg:border-l px-5 sm:px-7 py-6 bg-white/60" style="border-color:var(--rule)">
+        <h3 class="text-sm font-extrabold uppercase tracking-wider" style="color:var(--navy)">Custom holiday list</h3>
+        <p class="text-xs text-slate-500 mt-1">One date per line, as <span class="mono">YYYY-MM-DD</span>. You can add a label after the date. These dates are excluded in both modes.</p>
+        <div class="flex gap-2 mt-3">
+          <input type="date" id="holDate" class="flex-1 min-w-0 border rounded-lg px-3 py-2 mono text-sm bg-white" style="border-color:var(--rule)" aria-label="Holiday date to add">
+          <button type="button" id="holAdd" class="shrink-0 text-sm font-bold px-3.5 py-2 rounded-lg text-white hover:opacity-90" style="background:var(--navy2)">Add</button>
+        </div>
+        <textarea id="holList" rows="7" class="w-full mt-3 border rounded-lg px-3 py-2.5 mono text-[13px] bg-white resize-y" style="border-color:var(--rule)" placeholder="2026-01-01 New Year's Day&#10;2026-12-25 Christmas Day" aria-label="Holiday list, one date per line"></textarea>
+        <div class="flex flex-wrap items-center gap-2 mt-3">
+          <span class="text-xs font-bold text-slate-600 mr-1">Load preset:</span>
+          <button type="button" data-preset="us" class="presetBtn text-xs font-bold px-3 py-1.5 rounded-full border bg-white hover:bg-slate-50" style="border-color:var(--rule)">US Federal 2026</button>
+          <button type="button" data-preset="uk" class="presetBtn text-xs font-bold px-3 py-1.5 rounded-full border bg-white hover:bg-slate-50" style="border-color:var(--rule)">England 2026</button>
+          <button type="button" data-preset="in" class="presetBtn text-xs font-bold px-3 py-1.5 rounded-full border bg-white hover:bg-slate-50" style="border-color:var(--rule)">India 2026</button>
+          <button type="button" id="holClear" class="text-xs font-bold px-3 py-1.5 rounded-full border bg-white hover:bg-red-50 text-red-700" style="border-color:var(--rule)">Clear</button>
+        </div>
+        <p class="text-xs text-slate-500 mt-2"><span id="holCount" class="mono font-semibold text-slate-700">0</span> valid holidays loaded. Presets cover the main national days — always check your own employer's or state's calendar for extras.</p>
+
+        <h3 class="mt-7 text-sm font-extrabold uppercase tracking-wider" style="color:var(--navy)">Month at a glance</h3>
+        <div class="flex items-center justify-between mt-2">
+          <button type="button" id="calPrev" class="w-8 h-8 rounded-md border bg-white font-bold hover:bg-slate-50" style="border-color:var(--rule)" aria-label="Previous month">‹</button>
+          <span id="calTitle" class="font-bold text-sm" style="color:var(--navy)"></span>
+          <button type="button" id="calNext" class="w-8 h-8 rounded-md border bg-white font-bold hover:bg-slate-50" style="border-color:var(--rule)" aria-label="Next month">›</button>
+        </div>
+        <div class="grid grid-cols-7 gap-1 mt-2 text-center text-[10px] font-bold uppercase tracking-wide text-slate-400">
+          <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+        </div>
+        <div id="calGrid" class="grid grid-cols-7 gap-1 mt-1 mono"></div>
+        <div class="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-[11px] text-slate-500">
+          <span><span class="inline-block w-2.5 h-2.5 rounded-sm align-middle mr-1" style="background:#e8eefb"></span>Business day</span>
+          <span><span class="inline-block w-2.5 h-2.5 rounded-sm align-middle mr-1" style="background:#f3f4f6"></span>Weekend</span>
+          <span><span class="inline-block w-2.5 h-2.5 rounded-sm align-middle mr-1" style="background:#fbe9e9"></span>Holiday</span>
+          <span><span class="inline-block w-2.5 h-2.5 rounded-sm align-middle mr-1" style="box-shadow:inset 0 0 0 2px #c9a227"></span>In your range</span>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- How it works strip -->
+  <div class="grid sm:grid-cols-3 gap-4 mt-6 no-print">
+    <div class="bg-white rounded-xl border p-5" style="border-color:var(--rule)">
+      <div class="text-2xl" aria-hidden="true">🗓️</div>
+      <h3 class="font-extrabold mt-2" style="color:var(--navy)">Weekends ruled out</h3>
+      <p class="text-sm text-slate-600 mt-1">Every Saturday and Sunday inside your range is struck from the count automatically — no checkboxes to babysit.</p>
+    </div>
+    <div class="bg-white rounded-xl border p-5" style="border-color:var(--rule)">
+      <div class="text-2xl" aria-hidden="true">🏖️</div>
+      <h3 class="font-extrabold mt-2" style="color:var(--navy)">Your holidays, your rules</h3>
+      <p class="text-sm text-slate-600 mt-1">Paste your company or national holiday list, or load a 2026 preset. Holidays on a weekend never double-count.</p>
+    </div>
+    <div class="bg-white rounded-xl border p-5" style="border-color:var(--rule)">
+      <div class="text-2xl" aria-hidden="true">📒</div>
+      <h3 class="font-extrabold mt-2" style="color:var(--navy)">Ledger-grade breakdown</h3>
+      <p class="text-sm text-slate-600 mt-1">Every month in the range gets its own ledger row — calendar days, business days, weekends and holidays itemised.</p>
+    </div>
+  </div>
+</main>
+
+<div class="no-print mx-auto max-w-6xl px-4 sm:px-6 pb-4" role="complementary" aria-label="Advertisement">
+  <div class="mx-auto text-center" style="max-width:300px">
+    <span class="block text-[10px] tracking-[0.18em] uppercase text-slate-400 mb-1.5">Advertisement</span>
+    <div class="flex justify-center overflow-hidden">
+      <script>
+(function(grnp){
+var d = document,
+    s = d.createElement('script'),
+    l = d.currentScript || d.scripts[d.scripts.length - 1];
+s.settings = grnp || {};
+s.src = "\/\/peacefulbicycle.com\/bnXtVJsnd.GElF0oYVWQcY\/Qe\/mf9qu-ZqUtlZk\/PzTHcx1LM\/jWIZwkMTj\/U\/t-NrzmUnyOMsj\/AzydO\/Qx";
+s.async = true;
+s.referrerPolicy = 'no-referrer-when-downgrade';
+l.parentNode.insertBefore(s, l);
+})({})
+</script>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SEO Article + FAQ ===== -->
+<section class="mx-auto max-w-6xl px-4 sm:px-6 pb-10">
+  <article id="seo-article" class="bg-white rounded-xl border p-6 sm:p-10 prose-like" style="border-color:var(--rule)">
+    <h2 class="text-2xl sm:text-3xl font-black tracking-tight" style="color:var(--navy)">Business Days Calculator: Count Working Days the Accurate Way</h2>
+    <p class="mt-4 text-slate-700 leading-relaxed">Ask a project manager how long a task takes and you will usually hear an answer in business days: "That will ship in ten business days." Ask a calendar the same question and it answers in a completely different language — fourteen calendar days, two of which are weekends when nobody is at their desk. The gap between those two numbers is where deadlines slip, contracts get misread, and delivery promises quietly break. A business days calculator exists to close that gap. BizDays counts only the days when work actually happens: Monday to Friday, minus the public holidays and company shutdown days that you specify.</p>
+    <p class="mt-4 text-slate-700 leading-relaxed">The idea sounds simple, and the arithmetic behind it is simple too — but doing it by hand over a long range is surprisingly error-prone. Counting the working days in a quarter means scanning three calendar months, ruling out twelve or thirteen weekends, and then remembering which holidays fall on weekdays and which ones land on a Saturday and therefore change nothing. One missed bank holiday and every downstream date in your plan shifts by a day. That is why teams in operations, human resources, finance, logistics and legal work lean on a dedicated working-day calculator instead of a spreadsheet guess.</p>
+
+    <h3 class="mt-8 text-xl font-extrabold" style="color:var(--navy)">What exactly is a business day?</h3>
+    <p class="mt-3 text-slate-700 leading-relaxed">A business day — also called a working day or workday — is any day on which normal business operations take place. In most countries that means Monday through Friday, excluding public holidays. Saturdays and Sundays form the standard weekend across North America, Europe, India, Australia and much of the rest of the world, and BizDays follows that convention. Some regions historically used a Friday–Saturday weekend, and some industries, such as retail, healthcare and hospitality, staff Saturdays as a matter of routine; for those cases you can treat a listed "holiday" in reverse by simply planning around the standard count, but for the vast majority of office, banking and government work the Monday-to-Friday definition is the one written into contracts and service-level agreements.</p>
+    <p class="mt-3 text-slate-700 leading-relaxed">Public holidays are the second half of the definition, and they are the half people most often forget. A range that looks like twenty weekdays on the calendar may contain one or two national holidays that remove real working capacity. Worse, a holiday that falls on a weekend is usually not lost — many employers observe it on the nearest Friday or Monday — which is exactly the sort of nuance a hand count mangles. BizDays lets you paste your own holiday list, including any observed dates your company recognises, so the count reflects the calendar your team actually works to rather than a generic one.</p>
+
+    <h3 class="mt-8 text-xl font-extrabold" style="color:var(--navy)">Two modes: count between dates, or add workdays to a date</h3>
+    <p class="mt-3 text-slate-700 leading-relaxed">Most working-day questions come in two shapes. The first is a counting question: "How many business days are there between the 3rd of March and the 28th of April?" You might ask it to measure how long a vendor took to deliver, to compute the notice period in a contract, to work out how many days of leave an employee is really taking, or to check whether a support ticket breached its response-time promise. BizDays answers it with the Count Between Dates mode: choose a start and an end date, decide whether those two endpoint days themselves should be included, and read off the business days alongside calendar days, weekend days and holiday days so you can see exactly how the total is built.</p>
+    <p class="mt-3 text-slate-700 leading-relaxed">The second shape is a projection question: "If we start on Monday and the task needs fifteen working days, when do we finish?" That is the Add / Subtract Workdays mode. Enter a start date and a number of workdays — positive to move forward, negative to count backwards from a deadline — and BizDays walks the calendar day by day, stepping over weekends and your holidays, and tells you the exact date you land on, its day of the week, and how many calendar days the journey actually spans. Backwards mode is a quiet favourite with planners: set the launch date, subtract the workdays a task requires, and you get the latest honest start date instead of an optimistic one.</p>
+
+    <h3 class="mt-8 text-xl font-extrabold" style="color:var(--navy)">Why the per-month breakdown matters</h3>
+    <p class="mt-3 text-slate-700 leading-relaxed">A single total is enough for a quick answer, but longer ranges hide useful structure. A three-month project with sixty-three business days does not spread that capacity evenly: one month may carry a cluster of holidays while the next is completely clear. The per-month breakdown in BizDays itemises every month in your range — calendar days, business days, weekend days and holidays side by side, ledger style — so you can spot the thin months before they surprise you. Payroll teams use this view to sanity-check pro-rated salaries and timesheets. Finance teams use it to align billing cycles and revenue recognition with the real number of working days in each period. Anyone planning a phased rollout can see at a glance which month absorbs a holiday-heavy stretch and which month offers a clean run of uninterrupted weeks.</p>
+
+    <h3 class="mt-8 text-xl font-extrabold" style="color:var(--navy)">Custom holiday lists and 2026 presets</h3>
+    <p class="mt-3 text-slate-700 leading-relaxed">No two organisations observe exactly the same calendar. A multinational team may follow head-office holidays, a factory may shut down between Christmas and New Year, and a school or government office may follow a regional list with local festivals and state days added. That is why the holiday list in BizDays is fully yours: type or paste one date per line in YYYY-MM-DD format, optionally with a label after the date, and those days are excluded from both calculation modes instantly. If a holiday in your list falls on a Saturday or Sunday, BizDays does not double-count it — it is already a non-working day, and the ledger shows it honestly in the month rows without inflating the weekday-holiday total.</p>
+    <p class="mt-3 text-slate-700 leading-relaxed">To save typing, one-tap presets load the main 2026 national holidays for the United States federal calendar, for England, and for India. Treat presets as a starting point rather than gospel: add your company's own shutdown days, regional holidays and observed dates on top, and remove anything your organisation does not observe. Because everything runs locally in your browser, you can experiment freely — tweak the list, watch the totals update, and settle on the calendar that matches your real working year.</p>
+
+    <h3 class="mt-8 text-xl font-extrabold" style="color:var(--navy)">Everyday situations where a working-day count keeps you honest</h3>
+    <p class="mt-3 text-slate-700 leading-relaxed">Consider a few ordinary scenarios. A freelancer quoting "delivery in 15 business days" for a project starting the week before a national holiday owes the client a finish date, not a guess — adding fifteen workdays with the holiday excluded produces the date that belongs in the proposal. An HR manager approving twelve days of leave that spans two weekends and a public holiday needs to know the employee is actually using nine working days of allowance, not twelve. A logistics coordinator promised "dispatch within 3 business days" needs to know that an order placed on a Friday afternoon ships by Wednesday, not Monday. A lawyer checking a filing deadline expressed in business days cannot afford an off-by-one error caused by a bank holiday nobody noticed. In each case the cost of a wrong count is real — money, trust or compliance — while the cost of checking takes about ten seconds.</p>
+    <p class="mt-3 text-slate-700 leading-relaxed">There is also a subtle trap worth knowing about: inclusive versus exclusive counting. "Ten business days from Monday" can mean the tenth working day counting Monday itself, or the day reached by moving ten working days forward. Contracts and HR policies differ on the convention, which is why BizDays gives you explicit include-start and include-end toggles in count mode and a clear rule in add mode — the starting day is never counted as a step; each step moves you to the next actual business day. Whichever convention your situation needs, the setting is visible on screen rather than buried in a formula.</p>
+
+    <h3 class="mt-8 text-xl font-extrabold" style="color:var(--navy)">Fast, private and free</h3>
+    <p class="mt-3 text-slate-700 leading-relaxed">BizDays runs entirely in your browser. Your dates and holiday lists are never uploaded, stored on a server or tracked — you can even disconnect from the internet after the page loads and keep calculating. There is no signup, no paywall, no watermark and no limit on how often you use it. Whether you are reconciling a year of timesheets, planning a product launch around a holiday season, or simply answering a client's "when will it be ready?" with a date you can defend, the ledger above will give you the number — and show its working, month by month.</p>
+  </article>
+
+  <!-- FAQ -->
+  <div class="mt-8">
+    <h2 class="text-2xl font-black tracking-tight" style="color:var(--navy)">Frequently asked questions</h2>
+    <div class="mt-4 space-y-3">
+      <details class="faq bg-white rounded-xl border px-5 py-4" style="border-color:var(--rule)">
+        <summary class="font-bold flex items-center justify-between gap-3" style="color:var(--navy)">What counts as a business day in BizDays?<span class="chev text-slate-400">▾</span></summary>
+        <p class="text-sm text-slate-600 mt-2 leading-relaxed">A business day is any Monday to Friday that is not in your holiday list. Saturdays and Sundays are always excluded, and any date you add to the custom holiday panel is excluded too, in both the counting mode and the add/subtract mode.</p>
+      </details>
+      <details class="faq bg-white rounded-xl border px-5 py-4" style="border-color:var(--rule)">
+        <summary class="font-bold flex items-center justify-between gap-3" style="color:var(--navy)">What happens if a holiday falls on a weekend?<span class="chev text-slate-400">▾</span></summary>
+        <p class="text-sm text-slate-600 mt-2 leading-relaxed">Nothing is double-counted. A holiday that lands on a Saturday or Sunday is already a non-working day, so the business-day total stays correct. The per-month table still lists it in the Holidays column, but the "Holidays (Mon–Fri)" figure only counts holidays that actually remove a working day. If your employer observes that holiday on a Friday or Monday instead, add the observed date to your list.</p>
+      </details>
+      <details class="faq bg-white rounded-xl border px-5 py-4" style="border-color:var(--rule)">
+        <summary class="font-bold flex items-center justify-between gap-3" style="color:var(--navy)">Should I include the start and end dates in the count?<span class="chev text-slate-400">▾</span></summary>
+        <p class="text-sm text-slate-600 mt-2 leading-relaxed">It depends on the convention you are following. Counting both endpoints (the default) answers "how many working days does this period contain?", which suits leave balances and timesheets. Untick one or both endpoints when a contract or policy says "within N business days after this date", so the trigger day itself is not counted. The toggles update the totals and the monthly breakdown instantly.</p>
+      </details>
+      <details class="faq bg-white rounded-xl border px-5 py-4" style="border-color:var(--rule)">
+        <summary class="font-bold flex items-center justify-between gap-3" style="color:var(--navy)">How does the Add / Subtract Workdays mode work?<span class="chev text-slate-400">▾</span></summary>
+        <p class="text-sm text-slate-600 mt-2 leading-relaxed">Pick a start date and enter how many workdays to move — a positive number travels forward, a negative number travels backward. BizDays steps one calendar day at a time, skipping weekends and your holidays, until it has landed on that many business days. The start date itself is never counted as a step, and entering zero simply returns the start date.</p>
+      </details>
+      <details class="faq bg-white rounded-xl border px-5 py-4" style="border-color:var(--rule)">
+        <summary class="font-bold flex items-center justify-between gap-3" style="color:var(--navy)">Can I use my own company or country holiday list?<span class="chev text-slate-400">▾</span></summary>
+        <p class="text-sm text-slate-600 mt-2 leading-relaxed">Yes — that is what the Custom Holiday List panel is for. Paste one date per line in YYYY-MM-DD format (a label after the date is fine), use the date picker to add days one at a time, or start from the built-in 2026 presets for US federal, England or India holidays and edit from there. Duplicates and invalid lines are ignored automatically.</p>
+      </details>
+      <details class="faq bg-white rounded-xl border px-5 py-4" style="border-color:var(--rule)">
+        <summary class="font-bold flex items-center justify-between gap-3" style="color:var(--navy)">Is BizDays free, and is my data private?<span class="chev text-slate-400">▾</span></summary>
+        <p class="text-sm text-slate-600 mt-2 leading-relaxed">Yes on both counts. BizDays is completely free with unlimited usage — no signup, no paywall and no watermark. Every calculation happens locally in your browser, so the dates and holiday lists you enter never leave your device and are never stored or tracked.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<footer class="no-print border-t" style="border-color:var(--rule);background:var(--navy)">
+  <div class="mx-auto max-w-6xl px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-blue-200">
+    <span class="font-bold text-white">BizDays</span>
+    <span>Business days, counted honestly — weekends and your holidays excluded.</span>
+    <a href="#top" class="font-semibold text-white hover:underline">Back to top ↑</a>
+  </div>
+<p class="fx-credit" style="text-align:center;font-size:12.5px;opacity:.62;margin:10px auto 2px;letter-spacing:.01em">Made by <a href="https://fixoraa.tech" target="_blank" rel="noopener" style="color:inherit;font-weight:700;text-decoration:underline;text-underline-offset:2px">Fixoraa</a></p>
+</footer>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    { "@type": "Question", "name": "What counts as a business day in BizDays?", "acceptedAnswer": { "@type": "Answer", "text": "A business day is any Monday to Friday that is not in your holiday list. Saturdays and Sundays are always excluded, and any date you add to the custom holiday panel is excluded too, in both the counting mode and the add/subtract mode." } },
+    { "@type": "Question", "name": "What happens if a holiday falls on a weekend?", "acceptedAnswer": { "@type": "Answer", "text": "Nothing is double-counted. A holiday that lands on a Saturday or Sunday is already a non-working day, so the business-day total stays correct. The per-month table still lists it in the Holidays column, but the weekday-holiday figure only counts holidays that actually remove a working day. If your employer observes that holiday on a Friday or Monday instead, add the observed date to your list." } },
+    { "@type": "Question", "name": "Should I include the start and end dates in the count?", "acceptedAnswer": { "@type": "Answer", "text": "It depends on the convention you are following. Counting both endpoints (the default) answers how many working days a period contains, which suits leave balances and timesheets. Untick one or both endpoints when a contract or policy counts days after a trigger date, so that trigger day itself is not counted." } },
+    { "@type": "Question", "name": "How does the Add / Subtract Workdays mode work?", "acceptedAnswer": { "@type": "Answer", "text": "Pick a start date and enter how many workdays to move — a positive number travels forward, a negative number travels backward. BizDays steps one calendar day at a time, skipping weekends and your holidays, until it has landed on that many business days. The start date itself is never counted as a step, and entering zero simply returns the start date." } },
+    { "@type": "Question", "name": "Can I use my own company or country holiday list?", "acceptedAnswer": { "@type": "Answer", "text": "Yes — that is what the Custom Holiday List panel is for. Paste one date per line in YYYY-MM-DD format (a label after the date is fine), use the date picker to add days one at a time, or start from the built-in 2026 presets for US federal, England or India holidays and edit from there. Duplicates and invalid lines are ignored automatically." } },
+    { "@type": "Question", "name": "Is BizDays free, and is my data private?", "acceptedAnswer": { "@type": "Answer", "text": "Yes on both counts. BizDays is completely free with unlimited usage — no signup, no paywall and no watermark. Every calculation happens locally in your browser, so the dates and holiday lists you enter never leave your device and are never stored or tracked." } }
+  ]
+}
+</script>
+
+<script>
+(function () {
+  'use strict';
+  var L = BizDaysLib;
+  function $(id) { return document.getElementById(id); }
+  function todayISO() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+
+  var PRESETS = {
+    us: ['2026-01-01 New Year\'s Day', '2026-01-19 Martin Luther King Jr. Day', '2026-02-16 Presidents\' Day', '2026-05-25 Memorial Day', '2026-06-19 Juneteenth', '2026-07-03 Independence Day (observed)', '2026-09-07 Labor Day', '2026-10-12 Columbus Day', '2026-11-11 Veterans Day', '2026-11-26 Thanksgiving Day', '2026-12-25 Christmas Day'],
+    uk: ['2026-01-01 New Year\'s Day', '2026-04-03 Good Friday', '2026-04-06 Easter Monday', '2026-05-04 Early May bank holiday', '2026-05-25 Spring bank holiday', '2026-08-31 Summer bank holiday', '2026-12-25 Christmas Day', '2026-12-28 Boxing Day (observed)'],
+    in: ['2026-01-26 Republic Day', '2026-08-15 Independence Day', '2026-10-02 Gandhi Jayanti', '2026-12-25 Christmas Day']
+  };
+
+  var mode = 'count';
+  var calCursor = null; // YYYY-MM of visible calendar
+
+  function holidaysRaw() { return $('holList').value; }
+  function holidayList() { return L.normalizeHolidays(holidaysRaw()); }
+
+  function setMode(next) {
+    mode = next;
+    $('tabCount').setAttribute('aria-selected', next === 'count' ? 'true' : 'false');
+    $('tabAdd').setAttribute('aria-selected', next === 'add' ? 'true' : 'false');
+    $('panelCount').classList.toggle('hidden', next !== 'count');
+    $('panelAdd').classList.toggle('hidden', next !== 'add');
+    renderCalendar();
+  }
+  $('tabCount').addEventListener('click', function () { setMode('count'); });
+  $('tabAdd').addEventListener('click', function () { setMode('add'); });
+
+  // ---------- Count mode ----------
+  function runCount() {
+    var err = $('countError');
+    var s = $('startDate').value, e = $('endDate').value;
+    if (!s || !e) {
+      err.textContent = 'Pick both a start date and an end date to fill the ledger.';
+      err.classList.remove('hidden');
+      $('resBiz').textContent = '–'; $('resTotal').textContent = '–';
+      $('resWknd').textContent = '–'; $('resHol').textContent = '–';
+      $('countSummary').textContent = '';
+      $('monthBody').innerHTML = ''; $('monthFoot').innerHTML = '';
+      $('monthEmpty').classList.remove('hidden');
+      renderCalendar();
+      return;
+    }
+    var r = L.countBetween(s, e, holidayList(), { includeStart: $('includeStart').checked, includeEnd: $('includeEnd').checked });
+    if (!r.ok) { err.textContent = r.error; err.classList.remove('hidden'); return; }
+    err.classList.add('hidden');
+    $('resBiz').textContent = r.businessDays;
+    $('resTotal').textContent = r.totalDays;
+    $('resWknd').textContent = r.weekendDays;
+    $('resHol').textContent = r.weekdayHolidays;
+    $('countSummary').textContent =
+      'From ' + L.formatLong(r.start) + ' to ' + L.formatLong(r.end) + ': ' +
+      r.businessDays + ' business days out of ' + r.totalDays + ' calendar days' +
+      (r.swapped ? ' (dates were entered in reverse order, so they were swapped)' : '') + '.';
+    var html = '';
+    r.perMonth.forEach(function (m) {
+      html += '<tr class="border-t" style="border-color:var(--rule)">' +
+        '<td class="px-3 py-2 font-sans font-semibold" style="font-family:Archivo,sans-serif">' + m.label + '</td>' +
+        '<td class="px-3 py-2 text-right">' + m.totalDays + '</td>' +
+        '<td class="px-3 py-2 text-right font-semibold" style="color:var(--navy)">' + m.businessDays + '</td>' +
+        '<td class="px-3 py-2 text-right">' + m.weekendDays + '</td>' +
+        '<td class="px-3 py-2 text-right">' + m.holidayDays + '</td></tr>';
+    });
+    $('monthBody').innerHTML = html;
+    $('monthFoot').innerHTML = '<tr class="border-t-2 font-semibold" style="border-color:var(--navy)">' +
+      '<td class="px-3 py-2" style="font-family:Archivo,sans-serif">Total</td>' +
+      '<td class="px-3 py-2 text-right mono">' + r.totalDays + '</td>' +
+      '<td class="px-3 py-2 text-right mono" style="color:var(--navy)">' + r.businessDays + '</td>' +
+      '<td class="px-3 py-2 text-right mono">' + r.weekendDays + '</td>' +
+      '<td class="px-3 py-2 text-right mono">' + r.holidayDays + '</td></tr>';
+    $('monthEmpty').classList.toggle('hidden', r.perMonth.length > 0);
+    renderCalendar();
+  }
+
+  // ---------- Add mode ----------
+  function runAdd() {
+    var err = $('addError');
+    var s = $('addStart').value;
+    var n = Number($('addDays').value);
+    if (!s) {
+      err.textContent = 'Pick a start date first.'; err.classList.remove('hidden');
+      $('addResultDate').textContent = '–'; $('addResultMeta').textContent = 'Choose a start date and a number of workdays.';
+      renderCalendar(); return;
+    }
+    if ($('addDays').value === '' || !isFinite(n) || Math.trunc(n) !== n) {
+      err.textContent = 'Enter a whole number of workdays — for example 10, or -10 to go backwards.'; err.classList.remove('hidden');
+      $('addResultDate').textContent = '–'; $('addResultMeta').textContent = 'Waiting for a valid number of workdays.';
+      renderCalendar(); return;
+    }
+    var r = L.addWorkdays(s, n, holidayList());
+    if (!r.ok) { err.textContent = r.error; err.classList.remove('hidden'); return; }
+    err.classList.add('hidden');
+    $('addResultDate').textContent = r.resultLong;
+    $('addResultMeta').textContent =
+      (n === 0 ? 'Zero workdays means no movement — you stay on the start date.' :
+        Math.abs(n) + ' workday' + (Math.abs(n) === 1 ? '' : 's') + (n > 0 ? ' forward' : ' backward') +
+        ' from ' + L.formatLong(r.start) + ' spans ' + r.steps + ' calendar day' + (r.steps === 1 ? '' : 's') +
+        ', skipping weekends and ' + holidayList().length + ' listed holidays.');
+    renderCalendar();
+  }
+
+  function recalc() { runCount(); runAdd(); updateHolCount(); }
+
+  // ---------- Holidays ----------
+  function updateHolCount() { $('holCount').textContent = holidayList().length; }
+  $('holList').addEventListener('input', recalc);
+  $('holAdd').addEventListener('click', function () {
+    var v = $('holDate').value;
+    if (!v) return;
+    var cur = $('holList').value.replace(/\s+$/, '');
+    $('holList').value = (cur ? cur + '\n' : '') + v;
+    $('holDate').value = '';
+    recalc();
+  });
+  $('holClear').addEventListener('click', function () { $('holList').value = ''; recalc(); });
+  Array.prototype.forEach.call(document.querySelectorAll('.presetBtn'), function (b) {
+    b.addEventListener('click', function () {
+      var lines = PRESETS[b.getAttribute('data-preset')] || [];
+      var cur = $('holList').value.replace(/\s+$/, '');
+      $('holList').value = (cur ? cur + '\n' : '') + lines.join('\n');
+      recalc();
+    });
+  });
+
+  // ---------- Count inputs ----------
+  ['startDate', 'endDate', 'includeStart', 'includeEnd'].forEach(function (id) {
+    $(id).addEventListener('change', runCount);
+  });
+  $('swapBtn').addEventListener('click', function () {
+    var a = $('startDate').value; $('startDate').value = $('endDate').value; $('endDate').value = a; runCount();
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.rangeBtn'), function (b) {
+    b.addEventListener('click', function () {
+      var kind = b.getAttribute('data-range'), t = todayISO(), dt = L.parseISO(t), s, e;
+      if (kind === 'week') {
+        var dow = dt.getUTCDay(), monday = new Date(dt.getTime()); monday.setUTCDate(dt.getUTCDate() - ((dow + 6) % 7));
+        var sunday = new Date(monday.getTime()); sunday.setUTCDate(monday.getUTCDate() + 6);
+        s = L.toISO(monday); e = L.toISO(sunday);
+      } else if (kind === 'month') {
+        s = t.slice(0, 8) + '01';
+        var last = new Date(Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth() + 1, 0)); e = L.toISO(last);
+      } else if (kind === 'next30') { s = t; e = L.addCalendarDaysISO(t, 29); }
+      else if (kind === 'quarter') {
+        var q = Math.floor(dt.getUTCMonth() / 3) * 3;
+        s = dt.getUTCFullYear() + '-' + ('0' + (q + 1)).slice(-2) + '-01';
+        e = L.toISO(new Date(Date.UTC(dt.getUTCFullYear(), q + 3, 0)));
+      } else { s = t.slice(0, 4) + '-01-01'; e = t.slice(0, 4) + '-12-31'; }
+      $('startDate').value = s; $('endDate').value = e;
+      calCursor = s.slice(0, 7);
+      runCount();
+    });
+  });
+
+  // ---------- Add inputs ----------
+  ['addStart', 'addDays'].forEach(function (id) { $(id).addEventListener('change', runAdd); $(id).addEventListener('input', runAdd); });
+  $('minusBtn').addEventListener('click', function () { $('addDays').value = (parseInt($('addDays').value || '0', 10) - 1); runAdd(); });
+  $('plusBtn').addEventListener('click', function () { $('addDays').value = (parseInt($('addDays').value || '0', 10) + 1); runAdd(); });
+  Array.prototype.forEach.call(document.querySelectorAll('.addPreset'), function (b) {
+    b.addEventListener('click', function () { $('addDays').value = b.getAttribute('data-addpreset'); runAdd(); });
+  });
+
+  // ---------- Calendar ----------
+  function renderCalendar() {
+    if (!calCursor) {
+      var base = (mode === 'add' ? $('addStart').value : $('startDate').value) || todayISO();
+      calCursor = base.slice(0, 7);
+    }
+    var parts = calCursor.split('-'), y = parseInt(parts[0], 10), m = parseInt(parts[1], 10);
+    $('calTitle').textContent = L.MONTH_NAMES[m - 1] + ' ' + y;
+    var first = new Date(Date.UTC(y, m - 1, 1));
+    var startDow = first.getUTCDay();
+    var daysInMonth = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    var hols = {}; holidayList().forEach(function (h) { hols[h] = true; });
+    var rangeStart = mode === 'count' ? $('startDate').value : $('addStart').value;
+    var rangeEnd = mode === 'count' ? $('endDate').value : '';
+    if (mode === 'add') {
+      var rr = L.addWorkdays($('addStart').value, parseInt($('addDays').value || '0', 10), holidayList());
+      if (rr.ok) { rangeStart = rr.start < rr.result ? rr.start : rr.result; rangeEnd = rr.start < rr.result ? rr.result : rr.start; }
+    }
+    var html = '';
+    for (var i = 0; i < startDow; i++) html += '<span></span>';
+    for (var d = 1; d <= daysInMonth; d++) {
+      var iso = y + '-' + ('0' + m).slice(-2) + '-' + ('0' + d).slice(-2);
+      var dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+      var cls = 'cal-day ' + ((dow === 0 || dow === 6) ? 'cal-wknd' : (hols[iso] ? 'cal-hol' : 'cal-biz'));
+      if (rangeStart && rangeEnd && iso >= rangeStart && iso <= rangeEnd) cls += ' cal-mark';
+      html += '<span class="' + cls + '" title="' + L.formatLong(iso) + '">' + d + '</span>';
+    }
+    $('calGrid').innerHTML = html;
+  }
+  $('calPrev').addEventListener('click', function () {
+    var p = calCursor.split('-'), y = +p[0], m = +p[1] - 1; if (m < 1) { m = 12; y--; }
+    calCursor = y + '-' + ('0' + m).slice(-2); renderCalendar();
+  });
+  $('calNext').addEventListener('click', function () {
+    var p = calCursor.split('-'), y = +p[0], m = +p[1] + 1; if (m > 12) { m = 1; y++; }
+    calCursor = y + '-' + ('0' + m).slice(-2); renderCalendar();
+  });
+
+  // ---------- Copy & print ----------
+  $('copyBtn').addEventListener('click', function () {
+    var text;
+    if (mode === 'count') {
+      text = 'BizDays count: ' + $('countSummary').textContent + ' Business days: ' + $('resBiz').textContent +
+        ', calendar days: ' + $('resTotal').textContent + ', weekend days: ' + $('resWknd').textContent +
+        ', weekday holidays: ' + $('resHol').textContent + '.';
+    } else {
+      text = 'BizDays add/subtract: ' + $('addResultMeta').textContent + ' Result: ' + $('addResultDate').textContent + '.';
+    }
+    function done() { var m = $('copyMsg'); m.classList.remove('hidden'); setTimeout(function () { m.classList.add('hidden'); }, 2000); }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, done);
+    else {
+      var ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta);
+      ta.select(); try { document.execCommand('copy'); } catch (e) {} document.body.removeChild(ta); done();
+    }
+  });
+  $('printBtn').addEventListener('click', function () { window.print(); });
+
+  // ---------- Init ----------
+  var t = todayISO();
+  $('todayChip').textContent = 'Today · ' + L.formatLong(t);
+  $('startDate').value = t;
+  $('endDate').value = L.addCalendarDaysISO(t, 13);
+  $('addStart').value = t;
+  calCursor = t.slice(0, 7);
+  recalc();
+})();
+</script>
+</body>
+</html>

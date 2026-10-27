@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="canonical" href="https://time.fixoraa.tech/datejump//">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DateJump — Add &amp; Subtract Days from Any Date | Future Date Calculator</title>
+<meta name="description" content="DateJump is a free date calculator: add or subtract days, weeks, months or years from any date. See the day of the week, weeks breakdown, business-day results and bulk date calculations — no signup needed.">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        dusk: '#312E81',
+        duskdeep: '#1E1B4B',
+        peach: '#FDBA74',
+        peachdeep: '#FB923C',
+        cream: '#FFFBEB'
+      },
+      fontFamily: {
+        display: ['Georgia', 'serif'],
+        sans: ['system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif']
+      }
+    }
+  }
+};
+</script>
+<style>
+  body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+  .seg-btn[aria-pressed="true"] { background: #312E81; color: #FFFBEB; }
+  .chip { transition: transform .12s ease, box-shadow .12s ease; }
+  .chip:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(49,46,129,.25); }
+  .chip.active { background: #312E81; color: #FFFBEB; border-color: #312E81; }
+  .toggle-dot { transition: transform .18s ease; }
+  input[type="checkbox"].peer:checked + .toggle-track .toggle-dot { transform: translateX(20px); }
+  input[type="checkbox"].peer:checked + .toggle-track { background: #312E81; }
+  .result-pop { animation: pop .35s ease; }
+  @keyframes pop { 0% { transform: scale(.97); opacity: .4; } 100% { transform: scale(1); opacity: 1; } }
+  .no-print {}
+  article#seo-article h2 { font-size: 1.5rem; font-weight: 800; color: #1E1B4B; margin: 2rem 0 .75rem; }
+  article#seo-article p { margin: .75rem 0; line-height: 1.75; color: #44403C; }
+  article#seo-article ul { list-style: disc; padding-left: 1.5rem; margin: .75rem 0; color: #44403C; line-height: 1.75; }
+  article#seo-article li { margin-bottom: .4rem; }
+</style>
+</head>
+<body id="top" class="bg-cream text-stone-800 antialiased">
+
+<!-- Sticky header -->
+<header class="sticky top-0 z-50 bg-dusk text-cream shadow-lg">
+  <div class="mx-auto max-w-6xl px-4 sm:px-6 h-16 flex items-center justify-between">
+    <a href="#top" class="flex items-center gap-2 font-display text-2xl font-bold tracking-tight">
+      <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-peach text-duskdeep text-xl font-black">D</span>
+      <span>Date<span class="text-peach">Jump</span></span>
+    </a>
+    <nav class="flex items-center gap-4 sm:gap-6 text-sm font-semibold">
+      <a href="#top" class="hover:text-peach transition-colors">Home</a>
+      <a href="https://fixoraa.tech" class="rounded-full bg-peach px-4 py-1.5 text-duskdeep hover:bg-cream transition-colors">More Tools</a>
+    </nav>
+  </div>
+</header>
+
+<!-- Hero -->
+<section class="bg-dusk text-cream">
+  <div class="mx-auto max-w-6xl px-4 sm:px-6 pt-12 pb-10 text-center">
+    <span class="inline-block rounded-full border border-peach/60 bg-duskdeep/60 px-4 py-1 text-xs font-bold uppercase tracking-[0.18em] text-peach">Unlimited Free Usage</span>
+    <h1 class="mt-5 font-display text-4xl sm:text-5xl font-bold leading-tight">Jump to any date, <span class="text-peach">instantly</span>.</h1>
+    <p class="mx-auto mt-4 max-w-2xl text-cream/80 text-base sm:text-lg">Add or subtract days, weeks, months or years from any date. Get the exact day of the week, a weeks-and-days breakdown, business-day results and bulk calculations — free forever, no signup.</p>
+  </div>
+  <div class="h-10 bg-cream rounded-t-[2.5rem]"></div>
+</section>
+
+<!-- TOP AD (verbatim) -->
+<div class="no-print mx-auto max-w-6xl px-4 sm:px-6 pt-4" role="complementary" aria-label="Advertisement">
+  <div class="mx-auto text-center" style="max-width:728px">
+    <span class="block text-[10px] tracking-[0.18em] uppercase text-slate-400 mb-1.5">Advertisement</span>
+    <div class="flex justify-center overflow-hidden">
+      <div class="origin-top scale-[0.44] sm:scale-100 shrink-0">
+        <script>
+          atOptions = { 'key' : '4e68ac77881c17fe128a46565d9a4e8c', 'format' : 'iframe', 'height' : 90, 'width' : 728, 'params' : {} };
+        </script>
+        <script src="https://www.highrevenueformat.com/4e68ac77881c17fe128a46565d9a4e8c/invoke.js"></script>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TOOL ============ -->
+<main class="mx-auto max-w-6xl px-4 sm:px-6 py-8">
+
+  <div class="grid gap-6 lg:grid-cols-5">
+
+    <!-- Calculator card -->
+    <section class="lg:col-span-3 rounded-3xl bg-white p-6 sm:p-8 shadow-xl ring-1 ring-dusk/10" aria-label="Date calculator">
+      <h2 class="font-display text-2xl font-bold text-duskdeep">Date calculator</h2>
+      <p class="mt-1 text-sm text-stone-500">Pick a start date, an offset, and jump.</p>
+
+      <!-- Start date -->
+      <label class="mt-6 block text-xs font-bold uppercase tracking-wider text-dusk">Start date</label>
+      <div class="mt-2 flex flex-wrap gap-2">
+        <input id="startDate" type="date" class="w-full sm:w-auto flex-1 rounded-xl border-2 border-dusk/20 bg-cream px-4 py-3 text-lg font-semibold text-duskdeep focus:border-peachdeep focus:outline-none" aria-label="Start date">
+        <button id="todayBtn" type="button" class="rounded-xl bg-dusk/10 px-4 py-3 text-sm font-bold text-dusk hover:bg-dusk hover:text-cream transition-colors">Today</button>
+      </div>
+
+      <!-- Direction -->
+      <label class="mt-6 block text-xs font-bold uppercase tracking-wider text-dusk">Direction</label>
+      <div class="mt-2 grid grid-cols-2 gap-2 rounded-xl bg-dusk/5 p-1.5" role="group" aria-label="Add or subtract">
+        <button id="dirAdd" type="button" class="seg-btn rounded-lg px-4 py-2.5 text-sm font-bold text-dusk" aria-pressed="true">+ Add</button>
+        <button id="dirSub" type="button" class="seg-btn rounded-lg px-4 py-2.5 text-sm font-bold text-dusk" aria-pressed="false">− Subtract</button>
+      </div>
+
+      <!-- Amount + unit -->
+      <div class="mt-6 grid gap-4 sm:grid-cols-2">
+        <div>
+          <label for="amount" class="block text-xs font-bold uppercase tracking-wider text-dusk">Amount</label>
+          <input id="amount" type="number" min="1" value="90" inputmode="numeric" class="mt-2 w-full rounded-xl border-2 border-dusk/20 bg-cream px-4 py-3 text-lg font-semibold text-duskdeep focus:border-peachdeep focus:outline-none" aria-label="Offset amount">
+        </div>
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-dusk">Unit</label>
+          <div class="mt-2 grid grid-cols-4 gap-1 rounded-xl bg-dusk/5 p-1.5" role="group" aria-label="Offset unit">
+            <button type="button" data-unit="days" class="seg-btn unit-btn rounded-lg px-2 py-2.5 text-xs sm:text-sm font-bold text-dusk" aria-pressed="true">Days</button>
+            <button type="button" data-unit="weeks" class="seg-btn unit-btn rounded-lg px-2 py-2.5 text-xs sm:text-sm font-bold text-dusk" aria-pressed="false">Weeks</button>
+            <button type="button" data-unit="months" class="seg-btn unit-btn rounded-lg px-2 py-2.5 text-xs sm:text-sm font-bold text-dusk" aria-pressed="false">Months</button>
+            <button type="button" data-unit="years" class="seg-btn unit-btn rounded-lg px-2 py-2.5 text-xs sm:text-sm font-bold text-dusk" aria-pressed="false">Years</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick-pick chips -->
+      <label class="mt-6 block text-xs font-bold uppercase tracking-wider text-dusk">Quick picks</label>
+      <div id="chips" class="mt-2 flex flex-wrap gap-2">
+        <button type="button" data-chip="7" class="chip rounded-full border-2 border-dusk/20 bg-cream px-4 py-1.5 text-sm font-bold text-dusk">7 days</button>
+        <button type="button" data-chip="14" class="chip rounded-full border-2 border-dusk/20 bg-cream px-4 py-1.5 text-sm font-bold text-dusk">14 days</button>
+        <button type="button" data-chip="30" class="chip rounded-full border-2 border-dusk/20 bg-cream px-4 py-1.5 text-sm font-bold text-dusk">30 days</button>
+        <button type="button" data-chip="60" class="chip rounded-full border-2 border-dusk/20 bg-cream px-4 py-1.5 text-sm font-bold text-dusk">60 days</button>
+        <button type="button" data-chip="90" class="chip rounded-full border-2 border-dusk/20 bg-cream px-4 py-1.5 text-sm font-bold text-dusk">90 days</button>
+        <button type="button" data-chip="180" class="chip rounded-full border-2 border-dusk/20 bg-cream px-4 py-1.5 text-sm font-bold text-dusk">180 days</button>
+        <button type="button" data-chip="365" class="chip rounded-full border-2 border-dusk/20 bg-cream px-4 py-1.5 text-sm font-bold text-dusk">365 days</button>
+        <button type="button" data-chip="notice" class="chip rounded-full border-2 border-peachdeep/50 bg-peach/20 px-4 py-1.5 text-sm font-bold text-duskdeep">📋 90-day notice</button>
+        <button type="button" data-chip="net30" class="chip rounded-full border-2 border-peachdeep/50 bg-peach/20 px-4 py-1.5 text-sm font-bold text-duskdeep">🧾 Net 30</button>
+      </div>
+      <p id="chipNote" class="mt-2 hidden text-xs text-stone-500"></p>
+
+      <!-- Counting mode -->
+      <label class="mt-6 block text-xs font-bold uppercase tracking-wider text-dusk">Day counting</label>
+      <div class="mt-2 grid grid-cols-2 gap-2 rounded-xl bg-dusk/5 p-1.5" role="group" aria-label="Inclusive or exclusive counting">
+        <button id="countExc" type="button" class="seg-btn rounded-lg px-4 py-2.5 text-sm font-bold text-dusk" aria-pressed="true" title="The start day is day 0">Exclusive <span class="block text-[11px] font-normal opacity-70">start day = day 0</span></button>
+        <button id="countInc" type="button" class="seg-btn rounded-lg px-4 py-2.5 text-sm font-bold text-dusk" aria-pressed="false" title="The start day counts as day 1">Inclusive <span class="block text-[11px] font-normal opacity-70">start day = day 1</span></button>
+      </div>
+
+      <!-- Toggles -->
+      <div class="mt-6 space-y-3">
+        <label class="flex cursor-pointer items-center justify-between rounded-xl bg-dusk/5 px-4 py-3">
+          <span class="text-sm font-semibold text-duskdeep">Business days only <span class="block text-xs font-normal text-stone-500">skip Saturdays &amp; Sundays</span></span>
+          <input id="bizToggle" type="checkbox" class="peer sr-only">
+          <span class="toggle-track relative inline-flex h-6 w-11 shrink-0 items-center rounded-full bg-stone-300 px-1"><span class="toggle-dot inline-block h-4 w-4 rounded-full bg-white shadow"></span></span>
+        </label>
+        <label class="flex cursor-pointer items-center justify-between rounded-xl bg-dusk/5 px-4 py-3">
+          <span class="text-sm font-semibold text-duskdeep">Show calendar-week info <span class="block text-xs font-normal text-stone-500">ISO week number &amp; week start</span></span>
+          <input id="weekToggle" type="checkbox" class="peer sr-only" checked>
+          <span class="toggle-track relative inline-flex h-6 w-11 shrink-0 items-center rounded-full bg-stone-300 px-1"><span class="toggle-dot inline-block h-4 w-4 rounded-full bg-white shadow"></span></span>
+        </label>
+      </div>
+
+      <button id="calcBtn" type="button" class="mt-6 w-full rounded-2xl bg-dusk px-6 py-4 text-lg font-black text-cream shadow-lg transition-all hover:bg-duskdeep hover:shadow-xl active:scale-[0.99]">Calculate date →</button>
+      <p id="calcError" class="mt-3 hidden rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700" role="alert"></p>
+    </section>
+
+    <!-- Result card -->
+    <section class="lg:col-span-2 rounded-3xl bg-dusk p-6 sm:p-8 text-cream shadow-xl" aria-label="Result" aria-live="polite">
+      <h2 class="font-display text-2xl font-bold">Result</h2>
+      <div id="resultBody" class="mt-4">
+        <div class="rounded-2xl bg-duskdeep/70 p-6 text-center">
+          <p class="text-sm text-cream/60">Your result date will appear here.</p>
+          <p class="mt-2 text-4xl">📅</p>
+        </div>
+      </div>
+      <button id="copyBtn" type="button" class="mt-4 hidden w-full rounded-xl bg-peach px-4 py-3 text-sm font-black text-duskdeep hover:bg-cream transition-colors">Copy result</button>
+      <div class="mt-6 rounded-2xl bg-duskdeep/50 p-4 text-xs leading-relaxed text-cream/70">
+        <p class="font-bold text-peach">Why DateJump is exact</p>
+        <p class="mt-1">All math runs in UTC, so daylight-saving shifts can never move your answer by a day. Adding months clamps to the end of shorter months (Jan 31 + 1 month → Feb 28).</p>
+      </div>
+    </section>
+  </div>
+
+  <!-- Bulk mode -->
+  <section class="mt-8 rounded-3xl bg-white p-6 sm:p-8 shadow-xl ring-1 ring-dusk/10" aria-label="Bulk date calculator">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h2 class="font-display text-2xl font-bold text-duskdeep">Bulk mode <span class="ml-1 rounded-full bg-peach/40 px-2.5 py-0.5 text-xs font-black text-duskdeep align-middle">PRO-STYLE</span></h2>
+        <p class="mt-1 text-sm text-stone-500">Paste a list of offsets — one per line — and get a result table instantly. Uses the same start date, direction and toggles as above.</p>
+      </div>
+      <button id="csvBtn" type="button" class="hidden rounded-xl bg-dusk px-4 py-2.5 text-sm font-bold text-cream hover:bg-duskdeep transition-colors">Download CSV</button>
+    </div>
+    <div class="mt-4 grid gap-4 lg:grid-cols-2">
+      <div>
+        <label for="bulkInput" class="text-xs font-bold uppercase tracking-wider text-dusk">Offsets (one per line)</label>
+        <textarea id="bulkInput" rows="7" spellcheck="false" placeholder="+30 days&#10;-2 weeks&#10;45d&#10;90&#10;3 months&#10;-1y" class="mt-2 w-full rounded-xl border-2 border-dusk/20 bg-cream px-4 py-3 font-mono text-sm text-duskdeep focus:border-peachdeep focus:outline-none"></textarea>
+        <p class="mt-2 text-xs text-stone-500">Formats: <code class="rounded bg-dusk/10 px-1">30</code> <code class="rounded bg-dusk/10 px-1">+30d</code> <code class="rounded bg-dusk/10 px-1">-2 weeks</code> <code class="rounded bg-dusk/10 px-1">6m</code> <code class="rounded bg-dusk/10 px-1">1y</code> · sign + unit are optional</p>
+      </div>
+      <div class="overflow-x-auto rounded-xl ring-1 ring-dusk/10">
+        <table class="w-full min-w-[420px] text-left text-sm">
+          <thead>
+            <tr class="bg-dusk text-cream">
+              <th class="px-4 py-3 font-bold">#</th>
+              <th class="px-4 py-3 font-bold">Offset</th>
+              <th class="px-4 py-3 font-bold">Result date</th>
+              <th class="px-4 py-3 font-bold">Day</th>
+              <th class="px-4 py-3 font-bold">Days away</th>
+            </tr>
+          </thead>
+          <tbody id="bulkBody">
+            <tr><td colspan="5" class="px-4 py-8 text-center text-stone-400">Run bulk mode to fill this table.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="mt-4 flex flex-wrap gap-3">
+      <button id="bulkBtn" type="button" class="rounded-xl bg-dusk px-6 py-3 font-bold text-cream hover:bg-duskdeep transition-colors">Calculate all</button>
+      <button id="bulkSample" type="button" class="rounded-xl bg-dusk/10 px-6 py-3 font-bold text-dusk hover:bg-dusk hover:text-cream transition-colors">Load sample</button>
+      <button id="bulkClear" type="button" class="rounded-xl bg-dusk/10 px-6 py-3 font-bold text-dusk hover:bg-dusk hover:text-cream transition-colors">Clear</button>
+    </div>
+    <p id="bulkError" class="mt-3 hidden rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700" role="alert"></p>
+  </section>
+</main>
+
+<!-- BOTTOM AD (verbatim) -->
+<div class="no-print mx-auto max-w-6xl px-4 sm:px-6 pb-4" role="complementary" aria-label="Advertisement">
+  <div class="mx-auto text-center" style="max-width:300px">
+    <span class="block text-[10px] tracking-[0.18em] uppercase text-slate-400 mb-1.5">Advertisement</span>
+    <div class="flex justify-center overflow-hidden">
+      <script>
+(function(grnp){
+var d = document,
+    s = d.createElement('script'),
+    l = d.currentScript || d.scripts[d.scripts.length - 1];
+s.settings = grnp || {};
+s.src = "\/\/peacefulbicycle.com\/bnXtVJsnd.GElF0oYVWQcY\/Qe\/mf9qu-ZqUtlZk\/PzTHcx1LM\/jWIZwkMTj\/U\/t-NrzmUnyOMsj\/AzydO\/Qx";
+s.async = true;
+s.referrerPolicy = 'no-referrer-when-downgrade';
+l.parentNode.insertBefore(s, l);
+})({})
+</script>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SEO ARTICLE ============ -->
+<section class="mx-auto max-w-4xl px-4 sm:px-6 pb-16">
+<article id="seo-article">
+<h2>The complete guide to adding and subtracting days from a date</h2>
+<p>Almost every plan you make comes down to one simple question: what date is a certain number of days from today? A project deadline is 45 days from kickoff. A contract requires a 90-day notice period. An invoice is due on net-30 terms. A warranty expires two years after purchase. Behind each of these everyday moments sits the same small piece of arithmetic — date math — and getting it exactly right matters more than most people realize. One miscounted day can mean a missed filing deadline, a late payment fee, or a contract that renews when you meant to cancel it. This guide explains how date calculations really work, the traps that catch people out, and how to do them reliably every time.</p>
+<h2>Why adding days to a date is trickier than it looks</h2>
+<p>Adding days feels like ordinary addition, but dates are not ordinary numbers. Months have irregular lengths — 28, 29, 30 or 31 days — so you cannot simply add a number to the day-of-month and be done. Adding 30 days to January 15 does not give you "January 45"; you must roll through the end of January and into February, and the answer changes depending on whether February has 28 or 29 days that year. Add 30 days to January 15, 2026 and you land on February 14, 2026. Do the same in leap year 2024 and you land on February 13, because February 2024 had an extra day. The mechanics are simple once you see them, but doing them in your head across month and year boundaries is exactly where mistakes creep in.</p>
+<p>There is a second, subtler trap: time zones and daylight saving. Many online calculators and spreadsheet formulas compute with local time, and on the night clocks change, a "day" can be 23 or 25 hours long. Naive calculations can then land one day off — the classic off-by-one error. Professional date tools do their arithmetic in UTC (Coordinated Universal Time), where every day is exactly 24 hours, and only convert to a human-readable date at the very end. That is the approach DateJump uses, which is why its results stay exact even across daylight-saving transitions.</p>
+<h2>How to add days to a date, step by step</h2>
+<p>The reliable manual method works like this. Start from your start date and add the days one month at a time: first use up the days remaining in the current month, then consume whole months, then land in the final month. For example, to add 90 days to September 29, 2026: September has 1 day left after the 29th (the 30th), October contributes 31, November contributes 30 — that is 62 days used, leaving 28, which lands you on December 28, 2026. The same walk works for subtraction in reverse. For larger offsets it helps to think in chunks of whole years first (365 or 366 days), then months, then days. In practice, of course, nobody wants to do this by hand for every deadline — a dedicated date calculator does the walk for you in milliseconds and shows the day of the week too, which matters when a result lands on a weekend.</p>
+<h2>Adding weeks, months and years</h2>
+<p>Weeks are the easy unit: one week is always exactly seven days, so adding weeks is just adding multiples of seven. Months and years are where judgment calls appear. When you add one month to January 31, what should the answer be? February has no 31st, so every serious date library clamps to the last day of the target month: January 31 plus one month becomes February 28 (or February 29 in a leap year). This is called month-end clamping, and it is the behavior of SQL databases, Java, Python's dateutil and virtually every calendar API. The alternative — overflowing into March — surprises users and breaks billing logic, which is why clamping is the standard. The same rule applies to years: February 29, 2024 plus one year becomes February 28, 2025.</p>
+<p>A related question is what "one month" even means as a duration. For date arithmetic it means "the same day number in the next month" (with clamping), not "30 days". Adding one month to March 15 gives April 15, which is 31 days later, while adding one month to April 15 gives May 15, which is 30 days later. If you need a fixed duration instead, use days or weeks. This distinction is why DateJump keeps months/years and days/weeks as separate units rather than converting everything to days behind your back.</p>
+<h2>Business days vs calendar days</h2>
+<p>Many real-world deadlines are counted in business days, not calendar days. A "10 business day" delivery promise starting on a Friday means the parcel arrives two full weeks later, not the following Monday week. Business-day arithmetic simply skips Saturdays and Sundays as it counts. So 5 business days after Friday, January 2 is Friday, January 9 — the weekend days are stepped over, not counted. Some industries also skip public holidays, which vary by country and region; a general-purpose calculator skips weekends and leaves holiday calendars to specialized tools, but for most planning the weekend skip covers the need. When a date calculator offers a "business days only" toggle, it is converting your offset into a walk that counts only Monday-to-Friday landings.</p>
+<h2>Inclusive vs exclusive day counting — the deadline trap</h2>
+<p>One of the most common sources of date disputes is whether the start day itself counts as day one. In exclusive counting — the default in most calculators — the start date is day zero, so "30 days from September 29" lands on October 29. In inclusive counting, the start date counts as day one, so the same phrase lands on October 28. Legal notices, subscription trials and project sprints all disagree on which convention they use, which is why contracts spell it out ("within 30 days after receipt" vs "30 days including the date of receipt"). When the stakes are high, always confirm the convention — and when a calculator offers both modes, match it to your document's wording. A one-day difference is exactly the kind of thing that decides whether a notice was served on time.</p>
+<h2>Calendar weeks and the ISO week date</h2>
+<p>Beyond the date itself, planners often need the calendar week: which numbered week of the year does the result fall in, and which Monday starts that week? The international standard, ISO 8601, defines week 1 as the week containing the first Thursday of the year, with weeks running Monday to Sunday. Under this system a year has 52 or occasionally 53 weeks, and dates near New Year can belong to the previous or next year's week numbering — January 1, 2027, for example, falls in week 53 of 2026. Payroll cycles, sprint planning and manufacturing schedules all run on week numbers, so seeing the ISO week next to your result date saves a separate lookup.</p>
+<h2>Leap years, explained once and for all</h2>
+<p>A year is a leap year if it is divisible by 4, except century years, which must also be divisible by 400. So 2024 and 2028 are leap years, 1900 was not, and 2000 was. The extra day, February 29, exists because Earth takes about 365.2422 days to orbit the sun; without the correction our calendar would drift by a day every four years. For date arithmetic the practical consequence is small but real: any offset that crosses a February 29 lands one day later in the calendar than the same offset in a non-leap year. If your calculation spans February, double-check whether that year is a leap year — or let the calculator handle it.</p>
+<h2>Everyday uses for a date calculator</h2>
+<p>Once you start looking, date offsets are everywhere. Freelancers quote "delivery in 14 business days". HR teams compute probation end dates, notice periods and leave balances. Travelers count the 90/180-day Schengen allowance. Parents track pregnancy weeks and vaccination schedules. Students count down to exams. Investors track lock-in periods and maturity dates. Developers compute sprint end dates and certificate expirations. In each case the question is the same — start date plus offset equals result — and the value of a purpose-built tool is that it answers with the day of the week, the weeks-and-days breakdown and bulk results in one glance, instead of making you chain three separate lookups.</p>
+<h2>Bulk date calculations</h2>
+<p>Sometimes one date is not enough. A project manager may need milestone dates for a dozen different offsets from kickoff; a teacher may need exam dates for several "N days after term start" values; a finance team may need every invoice due date in a batch. Doing these one at a time is slow and error-prone. Bulk mode solves it: paste a list like "+30 days", "-2 weeks", "90", "3 months" and get a full table of result dates, each with its day of the week and distance from the start date. Exporting that table to CSV drops it straight into a spreadsheet or project plan. The parsing is forgiving — signs and units are optional, and plain numbers default to days — because the goal is speed, not ceremony.</p>
+<h2>Common mistakes and how to avoid them</h2>
+<ul>
+<li><strong>Counting on your fingers across month ends.</strong> Humans are bad at remembering which months have 30 vs 31 days. Use the knuckle trick (months on knuckles have 31 days) or, better, a calculator.</li>
+<li><strong>Forgetting leap years.</strong> Any calculation crossing February in a leap year shifts by a day. Check divisibility by 4 (and the century rule).</li>
+<li><strong>Mixing up inclusive and exclusive counting.</strong> Decide which convention your deadline uses before you calculate, not after.</li>
+<li><strong>Ignoring weekends in "business day" promises.</strong> Five business days is usually seven calendar days. Count only Monday–Friday landings.</li>
+<li><strong>Trusting local-time math near daylight-saving changes.</strong> If a tool ever gives you a result one day off in March or October, this is why. UTC-based math does not have this bug.</li>
+<li><strong>Assuming a month is 30 days.</strong> "One month from March 15" is April 15 (31 days later). For fixed durations, use days or weeks.</li>
+</ul>
+<h2>How DateJump computes your answer</h2>
+<p>DateJump performs every calculation in UTC, so daylight-saving transitions can never shift a result. Day and week offsets are added as exact 24-hour steps. Month and year offsets use month-end clamping, the same rule used by databases and programming-language date libraries worldwide. Business-day mode walks forward or backward one day at a time, counting only Monday-to-Friday landings. Inclusive mode counts your start date as day one; exclusive mode (the default) counts it as day zero. Bulk mode parses each line independently, so one malformed line never breaks the rest of the table. Everything runs locally in your browser — your dates are never uploaded anywhere — and the tool is free with no account, no limits and no watermarks.</p>
+</article>
+
+<!-- FAQs -->
+<section class="mt-12" aria-label="Frequently asked questions">
+<h2 class="font-display text-3xl font-bold text-duskdeep">Frequently asked questions</h2>
+<div class="mt-6 space-y-4">
+
+<div class="rounded-2xl bg-white p-6 shadow ring-1 ring-dusk/10">
+<h3 class="faq-q text-lg font-bold text-duskdeep">What date is 90 days from today?</h3>
+<p class="mt-2 text-stone-600 leading-relaxed">It depends on the current date, because months have different lengths. As a rule of thumb, 90 days is roughly three months. To get the exact answer, enter today's date as the start date in the calculator above, set the offset to 90 days, and press Calculate — you will also see the day of the week and the ISO calendar week of the result.</p>
+</div>
+
+<div class="rounded-2xl bg-white p-6 shadow ring-1 ring-dusk/10">
+<h3 class="faq-q text-lg font-bold text-duskdeep">How do I add days to a date?</h3>
+<p class="mt-2 text-stone-600 leading-relaxed">Enter your start date, choose the "Add" direction, type the number of days and press Calculate. DateJump walks forward across month and year boundaries using UTC math, so daylight-saving changes can never shift your answer. You can also use weeks, months or years as the unit, or pick a quick-pick chip like 30 or 365 days.</p>
+</div>
+
+<div class="rounded-2xl bg-white p-6 shadow ring-1 ring-dusk/10">
+<h3 class="faq-q text-lg font-bold text-duskdeep">How do I subtract days from a date?</h3>
+<p class="mt-2 text-stone-600 leading-relaxed">Switch the direction toggle to "Subtract", enter your start date and offset, and calculate. This is useful for finding deadlines counted backwards — for example, "submit the report 14 days before the board meeting". Month subtraction uses the same month-end clamping as addition: March 31 minus one month gives February 28 (or 29 in a leap year).</p>
+</div>
+
+<div class="rounded-2xl bg-white p-6 shadow ring-1 ring-dusk/10">
+<h3 class="faq-q text-lg font-bold text-duskdeep">How are business days calculated?</h3>
+<p class="mt-2 text-stone-600 leading-relaxed">When "Business days only" is on, DateJump steps one day at a time and counts only Monday-to-Friday landings, skipping Saturdays and Sundays. So 5 business days after a Friday lands on the following Friday, not the next Wednesday. Public holidays are not skipped, since they vary by country — for most planning, the weekend skip is what matters.</p>
+</div>
+
+<div class="rounded-2xl bg-white p-6 shadow ring-1 ring-dusk/10">
+<h3 class="faq-q text-lg font-bold text-duskdeep">What is the difference between inclusive and exclusive day counting?</h3>
+<p class="mt-2 text-stone-600 leading-relaxed">In exclusive counting (the default), the start date is day zero, so 30 days from September 29 lands on October 29. In inclusive counting, the start date counts as day one, so the same offset lands on October 28. Contracts and legal notices specify one convention or the other — always match the calculator's mode to the wording of your document to avoid a one-day miss.</p>
+</div>
+
+<div class="rounded-2xl bg-white p-6 shadow ring-1 ring-dusk/10">
+<h3 class="faq-q text-lg font-bold text-duskdeep">What happens when I add a month to January 31?</h3>
+<p class="mt-2 text-stone-600 leading-relaxed">You get the last day of February: February 28 in a normal year, February 29 in a leap year. This is called month-end clamping and it is the standard behavior of databases and date libraries worldwide. DateJump applies the same rule when adding or subtracting months and years, so month-end start dates always produce sensible results.</p>
+</div>
+
+</div>
+</section>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What date is 90 days from today?",
+      "acceptedAnswer": { "@type": "Answer", "text": "It depends on the current date, because months have different lengths. As a rule of thumb, 90 days is roughly three months. Enter today's date as the start date in the DateJump calculator, set the offset to 90 days, and press Calculate to get the exact date, day of the week and ISO calendar week." }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I add days to a date?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Enter your start date, choose the Add direction, type the number of days and press Calculate. DateJump walks forward across month and year boundaries using UTC math, so daylight-saving changes can never shift your answer." }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I subtract days from a date?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Switch the direction toggle to Subtract, enter your start date and offset, and calculate. Month subtraction uses month-end clamping: March 31 minus one month gives February 28, or 29 in a leap year." }
+    },
+    {
+      "@type": "Question",
+      "name": "How are business days calculated?",
+      "acceptedAnswer": { "@type": "Answer", "text": "When Business days only is on, DateJump steps one day at a time and counts only Monday-to-Friday landings, skipping Saturdays and Sundays. Public holidays are not skipped since they vary by country." }
+    },
+    {
+      "@type": "Question",
+      "name": "What is the difference between inclusive and exclusive day counting?",
+      "acceptedAnswer": { "@type": "Answer", "text": "In exclusive counting the start date is day zero, so 30 days from September 29 lands on October 29. In inclusive counting the start date counts as day one, so the same offset lands on October 28." }
+    },
+    {
+      "@type": "Question",
+      "name": "What happens when I add a month to January 31?",
+      "acceptedAnswer": { "@type": "Answer", "text": "You get the last day of February: February 28 in a normal year, February 29 in a leap year. This month-end clamping is the standard behavior of databases and date libraries worldwide." }
+    }
+  ]
+}
+</script>
+</section>
+
+<!-- Footer -->
+<footer class="bg-duskdeep text-cream/70">
+  <div class="mx-auto max-w-6xl px-4 sm:px-6 py-10 flex flex-col sm:flex-row items-center justify-between gap-4">
+    <p class="font-display text-xl font-bold text-cream">Date<span class="text-peach">Jump</span></p>
+    <p class="text-sm">Free date calculator · unlimited usage · no signup</p>
+    <a href="https://fixoraa.tech" class="text-sm font-semibold text-peach hover:text-cream">More Tools →</a>
+  </div>
+<p class="fx-credit" style="text-align:center;font-size:12.5px;opacity:.62;margin:10px auto 2px;letter-spacing:.01em">Made by <a href="https://fixoraa.tech" target="_blank" rel="noopener" style="color:inherit;font-weight:700;text-decoration:underline;text-underline-offset:2px">Fixoraa</a></p>
+</footer>
+
+<script id="dj-lib">
+'use strict';
+/* DateJump core date-math library — pure functions, UTC-safe (no timezone
+ * off-by-one bugs), no DOM, no network. Inlined verbatim into datejump.html
+ * at build time; the Node test extracts the <script id="dj-lib"> block and
+ * evals it. */
+
+function djIsLeapYear(y) {
+  return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+}
+
+function djDaysInMonth(y, m) {
+  if (m === 2) return djIsLeapYear(y) ? 29 : 28;
+  return m === 4 || m === 6 || m === 9 || m === 11 ? 30 : 31;
+}
+
+/* Parse "YYYY-MM-DD" strictly. Returns {y,m,d} or null. */
+function djParseDate(str) {
+  if (typeof str !== 'string') return null;
+  var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(str.trim());
+  if (!m) return null;
+  var y = parseInt(m[1], 10), mo = parseInt(m[2], 10), d = parseInt(m[3], 10);
+  if (mo < 1 || mo > 12) return null;
+  if (d < 1 || d > djDaysInMonth(y, mo)) return null;
+  return { y: y, m: mo, d: d };
+}
+
+function djToISO(dt) {
+  var p = function (n) { return (n < 10 ? '0' : '') + n; };
+  return dt.y + '-' + p(dt.m) + '-' + p(dt.d);
+}
+
+function djAddDays(dt, n) {
+  var t = new Date(Date.UTC(dt.y, dt.m - 1, dt.d));
+  t.setUTCDate(t.getUTCDate() + n);
+  return { y: t.getUTCFullYear(), m: t.getUTCMonth() + 1, d: t.getUTCDate() };
+}
+
+/* Month/year addition with month-end clamping: Jan 31 + 1 month -> Feb 28 (or 29). */
+function djAddMonths(dt, n) {
+  var total = dt.y * 12 + (dt.m - 1) + n;
+  var y = Math.floor(total / 12);
+  var m = ((total % 12) + 12) % 12 + 1;
+  var d = Math.min(dt.d, djDaysInMonth(y, m));
+  return { y: y, m: m, d: d };
+}
+
+function djAddYears(dt, n) {
+  return djAddMonths(dt, n * 12);
+}
+
+/* 0 = Sunday .. 6 = Saturday, computed in UTC. */
+function djDayOfWeek(dt) {
+  return new Date(Date.UTC(dt.y, dt.m - 1, dt.d)).getUTCDay();
+}
+
+function djIsWeekend(dt) {
+  var w = djDayOfWeek(dt);
+  return w === 0 || w === 6;
+}
+
+/* Add/subtract n business days (skips Sat/Sun), UTC-safe. */
+function djAddBusinessDays(dt, n) {
+  if (!n) return { y: dt.y, m: dt.m, d: dt.d };
+  var step = n > 0 ? 1 : -1;
+  var cur = { y: dt.y, m: dt.m, d: dt.d };
+  var remaining = Math.abs(n);
+  var guard = 0;
+  while (remaining > 0 && guard < 100000) {
+    guard++;
+    cur = djAddDays(cur, step);
+    if (!djIsWeekend(cur)) remaining--;
+  }
+  return cur;
+}
+
+/* Signed whole-day difference: djDiffDays(a, b) = b - a in calendar days. */
+function djDiffDays(a, b) {
+  return Math.round(
+    (Date.UTC(b.y, b.m - 1, b.d) - Date.UTC(a.y, a.m - 1, a.d)) / 86400000
+  );
+}
+
+function djWeeksBreakdown(totalDays) {
+  var n = Math.abs(totalDays);
+  return { weeks: Math.floor(n / 7), days: n % 7, total: n };
+}
+
+/* ISO-8601 week: { year, week }. */
+function djIsoWeek(dt) {
+  var d = new Date(Date.UTC(dt.y, dt.m - 1, dt.d));
+  var day = (d.getUTCDay() + 6) % 7; /* Mon=0..Sun=6 */
+  d.setUTCDate(d.getUTCDate() - day + 3); /* Thursday of this week */
+  var weekYear = d.getUTCFullYear();
+  var jan4 = new Date(Date.UTC(weekYear, 0, 4));
+  var week = 1 + Math.round((d.getTime() - jan4.getTime()) / 604800000);
+  return { year: weekYear, week: week };
+}
+
+/* Monday (start) of the calendar week containing dt. */
+function djMondayOfWeek(dt) {
+  var day = (djDayOfWeek(dt) + 6) % 7;
+  return djAddDays(dt, -day);
+}
+
+/*
+ * Parse one bulk-mode line into { sign, amount, unit } or null.
+ * Accepted: "30", "+30", "-14d", "45 days", "+2 weeks", "-3w", "6m", "1y",
+ * "18 months", "2 years". Unit defaults to days; sign defaults to +.
+ */
+function djParseOffsetLine(line) {
+  var t = String(line == null ? '' : line).trim().toLowerCase();
+  if (!t) return null;
+  var m = /^([+-]?)(\d+)\s*(days?|weeks?|months?|years?|d|w|m|y)?$/.exec(t);
+  if (!m) return null;
+  var raw = m[3] || 'd';
+  var unit = 'days';
+  if (raw.charAt(0) === 'w') unit = 'weeks';
+  else if (raw.charAt(0) === 'm') unit = 'months';
+  else if (raw.charAt(0) === 'y') unit = 'years';
+  var amount = parseInt(m[2], 10);
+  if (amount <= 0) return null;
+  return { sign: m[1] === '-' ? -1 : 1, amount: amount, unit: unit };
+}
+
+/*
+ * Main computation.
+ *   startISO: "YYYY-MM-DD"
+ *   amount: positive integer, unit: days|weeks|months|years
+ *   direction: "add" | "subtract"
+ *   opts: { counting: "exclusive"|"inclusive", businessDays: bool }
+ * Inclusive counting counts the start day as day 1, so the result lands one
+ * day earlier than exclusive counting for the same amount.
+ * businessDays forces day-granularity and skips weekends.
+ */
+function djCompute(startISO, amount, unit, direction, opts) {
+  opts = opts || {};
+  var dt = djParseDate(startISO);
+  if (!dt) return { ok: false, error: 'Please enter a valid start date.' };
+  amount = Math.floor(Math.abs(Number(amount)));
+  if (!isFinite(amount) || amount <= 0) {
+    return { ok: false, error: 'Enter an offset greater than zero.' };
+  }
+  var dir = direction === 'subtract' ? -1 : 1;
+  var n = opts.counting === 'inclusive' ? amount - 1 : amount;
+  var res;
+  if (opts.businessDays) {
+    var dayCount = unit === 'weeks' ? n * 7 : n; /* months/years fall back to days when business-only */
+    res = djAddBusinessDays(dt, dir * dayCount);
+  } else if (unit === 'days') {
+    res = djAddDays(dt, dir * n);
+  } else if (unit === 'weeks') {
+    res = djAddDays(dt, dir * n * 7);
+  } else if (unit === 'months') {
+    res = djAddMonths(dt, dir * n);
+  } else if (unit === 'years') {
+    res = djAddYears(dt, dir * n);
+  } else {
+    return { ok: false, error: 'Unknown unit.' };
+  }
+  var calDays = djDiffDays(dt, res);
+  return {
+    ok: true,
+    start: dt,
+    result: res,
+    calendarDays: Math.abs(calDays),
+    signedDays: calDays,
+    direction: dir,
+    counting: opts.counting === 'inclusive' ? 'inclusive' : 'exclusive',
+    businessDays: !!opts.businessDays,
+    breakdown: djWeeksBreakdown(Math.abs(calDays)),
+    isoWeek: djIsoWeek(res),
+    weekMonday: djMondayOfWeek(res)
+  };
+}
+
+var DJ_DOW_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+var DJ_DOW_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+var DJ_MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+var DJ_MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function djFormatLong(dt) {
+  return DJ_DOW_NAMES[djDayOfWeek(dt)] + ', ' + dt.d + ' ' + DJ_MONTH_NAMES[dt.m - 1] + ' ' + dt.y;
+}
+
+function djFormatShort(dt) {
+  return dt.d + ' ' + DJ_MONTH_SHORT[dt.m - 1] + ' ' + dt.y;
+}
+
+</script>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var state = { direction: 'add', unit: 'days', counting: 'exclusive', business: false, showWeek: true, lastResult: null, lastBulk: [] };
+
+  /* ---- settings persistence ---- */
+  try {
+    var saved = JSON.parse(localStorage.getItem('datejump-settings') || '{}');
+    if (saved.direction === 'subtract') state.direction = 'subtract';
+    if (['days','weeks','months','years'].indexOf(saved.unit) >= 0) state.unit = saved.unit;
+    if (saved.counting === 'inclusive') state.counting = 'inclusive';
+    state.business = !!saved.business;
+    if (saved.showWeek === false) state.showWeek = false;
+  } catch (e) {}
+  function persist() {
+    try { localStorage.setItem('datejump-settings', JSON.stringify({ direction: state.direction, unit: state.unit, counting: state.counting, business: state.business, showWeek: state.showWeek })); } catch (e) {}
+  }
+
+  function todayISO() {
+    var t = new Date();
+    var p = function (n) { return (n < 10 ? '0' : '') + n; };
+    return t.getFullYear() + '-' + p(t.getMonth() + 1) + '-' + p(t.getDate());
+  }
+
+  function setSeg(btn, on) { btn.setAttribute('aria-pressed', on ? 'true' : 'false'); }
+
+  function refreshSeg() {
+    setSeg($('dirAdd'), state.direction === 'add');
+    setSeg($('dirSub'), state.direction === 'subtract');
+    setSeg($('countExc'), state.counting === 'exclusive');
+    setSeg($('countInc'), state.counting === 'inclusive');
+    var btns = document.querySelectorAll('.unit-btn');
+    for (var i = 0; i < btns.length; i++) setSeg(btns[i], btns[i].getAttribute('data-unit') === state.unit);
+    $('bizToggle').checked = state.business;
+    $('weekToggle').checked = state.showWeek;
+  }
+
+  function showError(msg) {
+    var el = $('calcError');
+    if (!msg) { el.classList.add('hidden'); el.textContent = ''; return; }
+    el.textContent = msg; el.classList.remove('hidden');
+  }
+
+  function unitLabel(u, n) {
+    var base = u === 'days' ? 'day' : u === 'weeks' ? 'week' : u === 'months' ? 'month' : 'year';
+    return n === 1 ? base : base + 's';
+  }
+
+  function calculate() {
+    showError(null);
+    var startISO = $('startDate').value;
+    var amount = parseInt($('amount').value, 10);
+    if (!djParseDate(startISO)) { showError('Please pick a valid start date.'); return; }
+    if (!isFinite(amount) || amount < 1) { showError('Enter an offset of at least 1.'); return; }
+    var r = djCompute(startISO, amount, state.unit, state.direction, { counting: state.counting, businessDays: state.business });
+    if (!r.ok) { showError(r.error); return; }
+    state.lastResult = r;
+    renderResult(r, amount);
+    persist();
+  }
+
+  function renderResult(r, amount) {
+    var dirWord = r.direction === 1 ? 'after' : 'before';
+    var countWord = r.counting === 'inclusive' ? 'inclusive' : 'exclusive';
+    var bizWord = r.businessDays ? ' business ' : ' ';
+    var html = '<div class="result-pop rounded-2xl bg-duskdeep/70 p-6">';
+    html += '<p class="text-xs uppercase tracking-[0.18em] text-peach font-bold">' + amount + bizWord + unitLabel(state.unit, amount) + ' ' + (r.direction === 1 ? 'added' : 'subtracted') + ' · ' + countWord + '</p>';
+    html += '<p class="mt-3 font-display text-3xl sm:text-4xl font-bold leading-tight">' + djFormatLong(r.result) + '</p>';
+    html += '<p class="mt-2 font-mono text-sm text-cream/70">' + djToISO(r.result) + '</p>';
+    html += '<div class="mt-4 grid grid-cols-2 gap-3 text-center">';
+    html += '<div class="rounded-xl bg-cream/10 p-3"><p class="text-2xl font-black text-peach">' + r.breakdown.weeks + '</p><p class="text-[11px] text-cream/60">weeks</p></div>';
+    html += '<div class="rounded-xl bg-cream/10 p-3"><p class="text-2xl font-black text-peach">' + r.breakdown.days + '</p><p class="text-[11px] text-cream/60">extra days</p></div>';
+    html += '</div>';
+    html += '<p class="mt-3 text-sm text-cream/80">' + r.calendarDays + ' calendar day' + (r.calendarDays === 1 ? '' : 's') + ' ' + dirWord + ' ' + djFormatShort(r.start) + '</p>';
+    if (state.showWeek) {
+      html += '<p class="mt-2 rounded-xl bg-peach/15 px-3 py-2 text-sm text-peach">📅 ISO week ' + r.isoWeek.week + ' of ' + r.isoWeek.year + ' · week starts Mon ' + djFormatShort(r.weekMonday) + '</p>';
+    }
+    html += '</div>';
+    $('resultBody').innerHTML = html;
+    $('copyBtn').classList.remove('hidden');
+  }
+
+  $('copyBtn').addEventListener('click', function () {
+    var r = state.lastResult; if (!r) return;
+    var text = djFormatLong(r.result) + ' (' + djToISO(r.result) + ') — ' + r.calendarDays + ' days ' + (r.direction === 1 ? 'after' : 'before') + ' ' + djToISO(r.start);
+    function done() { $('copyBtn').textContent = 'Copied ✓'; setTimeout(function () { $('copyBtn').textContent = 'Copy result'; }, 1500); }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () { fallback(); });
+    } else fallback();
+    function fallback() {
+      var ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); done(); } catch (e) {}
+      document.body.removeChild(ta);
+    }
+  });
+
+  /* ---- controls ---- */
+  $('dirAdd').addEventListener('click', function () { state.direction = 'add'; refreshSeg(); calculate(); });
+  $('dirSub').addEventListener('click', function () { state.direction = 'subtract'; refreshSeg(); calculate(); });
+  $('countExc').addEventListener('click', function () { state.counting = 'exclusive'; refreshSeg(); calculate(); });
+  $('countInc').addEventListener('click', function () { state.counting = 'inclusive'; refreshSeg(); calculate(); });
+  var ubtns = document.querySelectorAll('.unit-btn');
+  for (var i = 0; i < ubtns.length; i++) {
+    ubtns[i].addEventListener('click', function () { state.unit = this.getAttribute('data-unit'); clearChips(); refreshSeg(); calculate(); });
+  }
+  $('bizToggle').addEventListener('change', function () { state.business = this.checked; calculate(); });
+  $('weekToggle').addEventListener('change', function () { state.showWeek = this.checked; if (state.lastResult) renderResult(state.lastResult, parseInt($('amount').value, 10) || 0); persist(); });
+  $('todayBtn').addEventListener('click', function () { $('startDate').value = todayISO(); calculate(); });
+  $('calcBtn').addEventListener('click', calculate);
+  $('startDate').addEventListener('change', calculate);
+  $('amount').addEventListener('input', function () { clearChips(); calculate(); });
+
+  function clearChips() {
+    var chips = document.querySelectorAll('#chips .chip');
+    for (var i = 0; i < chips.length; i++) chips[i].classList.remove('active');
+    $('chipNote').classList.add('hidden');
+  }
+
+  $('chips').addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-chip]'); if (!btn) return;
+    clearChips(); btn.classList.add('active');
+    var key = btn.getAttribute('data-chip');
+    var note = $('chipNote');
+    if (key === 'notice') {
+      $('amount').value = 90; state.unit = 'days'; state.direction = 'add';
+      note.textContent = '📋 90-day notice: 90 days added (exclusive counting). Adjust the direction if your notice counts backwards from an end date.';
+    } else if (key === 'net30') {
+      $('amount').value = 30; state.unit = 'days'; state.direction = 'add';
+      note.textContent = '🧾 Net 30: payment due 30 days after the invoice date.';
+    } else {
+      $('amount').value = key; state.unit = 'days';
+      note.textContent = '';
+    }
+    if (note.textContent) note.classList.remove('hidden');
+    refreshSeg(); calculate();
+  });
+
+  /* ---- bulk mode ---- */
+  function bulkCalculate() {
+    var err = $('bulkError'); err.classList.add('hidden'); err.textContent = '';
+    var startISO = $('startDate').value;
+    if (!djParseDate(startISO)) { err.textContent = 'Pick a valid start date first (used for every bulk row).'; err.classList.remove('hidden'); return; }
+    var lines = $('bulkInput').value.split(/\r?\n|,/);
+    var rows = []; var bad = 0;
+    for (var i = 0; i < lines.length; i++) {
+      var p = djParseOffsetLine(lines[i]);
+      if (!p) { if (lines[i].trim()) bad++; continue; }
+      var r = djCompute(startISO, p.amount, p.unit, p.sign === 1 ? 'add' : 'subtract',
+        { counting: state.counting, businessDays: state.business });
+      if (!r.ok) { bad++; continue; }
+      rows.push({ offset: (p.sign === 1 ? '+' : '−') + p.amount + ' ' + unitLabel(p.unit, p.amount), r: r });
+    }
+    if (!rows.length) { err.textContent = bad ? 'No valid offsets found — check the format (e.g. "+30 days", "-2w", "90").' : 'Paste at least one offset first.'; err.classList.remove('hidden'); return; }
+    state.lastBulk = rows;
+    var html = '';
+    for (var j = 0; j < rows.length; j++) {
+      var row = rows[j];
+      var zebra = j % 2 ? 'bg-cream/60' : 'bg-white';
+      html += '<tr class="' + zebra + ' border-t border-dusk/10">'
+        + '<td class="px-4 py-2.5 text-stone-400">' + (j + 1) + '</td>'
+        + '<td class="px-4 py-2.5 font-semibold text-duskdeep">' + row.offset + '</td>'
+        + '<td class="px-4 py-2.5 font-bold text-duskdeep">' + djFormatShort(row.r.result) + '</td>'
+        + '<td class="px-4 py-2.5 text-stone-500">' + DJ_DOW_SHORT[djDayOfWeek(row.r.result)] + '</td>'
+        + '<td class="px-4 py-2.5 text-stone-500">' + (row.r.signedDays >= 0 ? '+' : '−') + Math.abs(row.r.signedDays) + '</td></tr>';
+    }
+    $('bulkBody').innerHTML = html;
+    $('csvBtn').classList.remove('hidden');
+    if (bad) { err.textContent = bad + ' line' + (bad === 1 ? '' : 's') + ' could not be parsed and were skipped.'; err.classList.remove('hidden'); }
+  }
+
+  $('bulkBtn').addEventListener('click', bulkCalculate);
+  $('bulkSample').addEventListener('click', function () {
+    $('bulkInput').value = '+7 days\n+30 days\n-2 weeks\n90\n3 months\n-1y\n+180d';
+    bulkCalculate();
+  });
+  $('bulkClear').addEventListener('click', function () {
+    $('bulkInput').value = '';
+    $('bulkBody').innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-stone-400">Run bulk mode to fill this table.</td></tr>';
+    $('csvBtn').classList.add('hidden'); state.lastBulk = [];
+  });
+  $('csvBtn').addEventListener('click', function () {
+    var csv = 'Offset,Result date,ISO,Day of week,Days from start\n';
+    for (var i = 0; i < state.lastBulk.length; i++) {
+      var row = state.lastBulk[i];
+      csv += '"' + row.offset + '","' + djFormatLong(row.r.result) + '",' + djToISO(row.r.result) + ',' + DJ_DOW_NAMES[djDayOfWeek(row.r.result)] + ',' + row.r.signedDays + '\n';
+    }
+    var blob = new Blob([csv], { type: 'text/csv' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'datejump-bulk.csv';
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  });
+
+  /* ---- init ---- */
+  if (!$('startDate').value) $('startDate').value = todayISO();
+  refreshSeg();
+  calculate();
+})();
+</script>
+</body>
+</html>

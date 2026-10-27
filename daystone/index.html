@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DayStone — Days Alive Calculator & Life Milestones: Your 10,000th Day & More</title>
+<meta name="description" content="Free life milestones calculator. Enter your birth date to see days alive, your next milestone days (5,000th, 10,000th, 20,000th day), your golden birthday and a shareable milestones card.">
+<link rel="canonical" href="https://time.fixoraa.tech/daystone//">
+<meta property="og:title" content="DayStone — Days Alive Calculator & Life Milestones: Your 10,000th Day & More">
+<meta property="og:description" content="Free life milestones calculator. Enter your birth date to see days alive, your next milestone days (5,000th, 10,000th, 20,000th day), your golden birthday and a shareable milestones card.">
+<meta property="og:url" content="https://time.fixoraa.tech/daystone//">
+<meta property="og:type" content="website">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+:root{--pri:#B91C1C;--acc:#0D9488;--bgc:#FEF2F2}
+body{background:var(--bgc);font-family:'Segoe UI',system-ui,sans-serif}
+.pri{background:var(--pri)} .prit{color:var(--pri)} .acct{color:var(--acc)}
+.btn{background:var(--pri);color:#fff;padding:.6rem 1.2rem;border-radius:.6rem;font-weight:600;cursor:pointer;border:none}
+.btn:hover{opacity:.9} .btn2{background:var(--acc);color:#111;padding:.6rem 1.2rem;border-radius:.6rem;font-weight:600;cursor:pointer;border:none}
+input,select,textarea{border:1.5px solid #cbd5e1;border-radius:.55rem;padding:.55rem .7rem;width:100%;background:#fff;color:#0f172a}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--pri);border-color:transparent}
+label{font-size:.83rem;font-weight:600;display:block;margin-bottom:.3rem}
+.card{background:#fff;border-radius:1rem;box-shadow:0 8px 30px rgba(15,23,42,.08);padding:1.4rem}
+article p{margin:.7rem 0;line-height:1.75;color:#334155}
+article h2{font-size:1.45rem;font-weight:800;margin:1.6rem 0 .4rem;color:#0f172a}
+.faq{background:#fff;border-radius:.7rem;padding:.9rem 1.1rem;margin:.55rem 0;box-shadow:0 2px 10px rgba(15,23,42,.05)}
+.faq summary{font-weight:700;cursor:pointer}
+table.dt{width:100%;border-collapse:collapse} table.dt th,table.dt td{border:1px solid #e2e8f0;padding:.45rem .6rem;text-align:left;font-size:.9rem}
+table.dt th{background:#f1f5f9}
+
+</style>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "DayStone", "url": "https://time.fixoraa.tech/daystone//", "applicationCategory": "UtilitiesApplication", "operatingSystem": "Any", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "description": "Free life milestones calculator. Enter your birth date to see days alive, your next milestone days (5,000th, 10,000th, 20,000th day), your golden birthday and a shareable milestones card."}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "When is my 10,000th day?", "acceptedAnswer": {"@type": "Answer", "text": "About 27 years and 4.5 months after your birth \u2014 the exact date depends on how many leap days fall in your span. Enter your birth date above and your milestone table shows it precisely, with a countdown."}}, {"@type": "Question", "name": "What is a golden birthday?", "acceptedAnswer": {"@type": "Answer", "text": "The birthday when your age equals your birth date's day number \u2014 turning 24 on the 24th, for instance. It happens once in a lifetime, and DayStone shows its date alongside your day milestones."}}, {"@type": "Question", "name": "How are days alive counted \u2014 do leap days count?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, every real day counts, including 29 February in leap years. The calculator counts midnights between your birth date and today, so the time of day you check never skews the total."}}, {"@type": "Question", "name": "Can I find milestones for my child or parent?", "acceptedAnswer": {"@type": "Answer", "text": "Absolutely \u2014 enter any birth date. Parents enjoy children's 100th, 1,000th and 5,000th days, and a parent's upcoming thousand-day milestone makes a thoughtful, unusual celebration."}}, {"@type": "Question", "name": "Is my date of birth stored or shared?", "acceptedAnswer": {"@type": "Answer", "text": "No. All calculation happens in your browser; nothing is transmitted or saved. The share card contains only what you choose to copy \u2014 your day count and milestone dates."}}, {"@type": "Question", "name": "Why celebrate days instead of birthdays?", "acceptedAnswer": {"@type": "Answer", "text": "Birthdays repeat yearly and blur together; thousand-day milestones are rarer, land on unexpected dates, and mark the actual unit a life is lived in. They are extra festivals hiding in arithmetic you already own."}}]}</script>
+</head>
+<body id="top">
+<header class="sticky top-0 z-40 shadow-md" style="background:#450A0A">
+  <div class="mx-auto max-w-6xl px-4 sm:px-6 py-3 flex items-center justify-between">
+    <a href="#top" class="text-xl font-extrabold tracking-tight" style="color:#FEF2F2">🗓 DayStone</a>
+    <nav class="flex gap-5 text-sm font-semibold" style="color:#FEF2F2">
+      <a href="#top" class="hover:underline">Home</a>
+      <a href="https://fixoraa.tech" class="hover:underline">More Tools</a>
+    </nav>
+  </div>
+</header>
+<div class="no-print mx-auto max-w-6xl px-4 sm:px-6 pt-4" role="complementary" aria-label="Advertisement">
+  <div class="mx-auto text-center" style="max-width:728px">
+    <span class="block text-[10px] tracking-[0.18em] uppercase text-slate-400 mb-1.5">Advertisement</span>
+    <div class="flex justify-center overflow-hidden">
+      <div class="origin-top scale-[0.44] sm:scale-100 shrink-0">
+        <script>
+          atOptions = { 'key' : '4e68ac77881c17fe128a46565d9a4e8c', 'format' : 'iframe', 'height' : 90, 'width' : 728, 'params' : {} };
+        </script>
+        <script src="https://www.highrevenueformat.com/4e68ac77881c17fe128a46565d9a4e8c/invoke.js"></script>
+      </div>
+    </div>
+  </div>
+</div>
+<main class="mx-auto max-w-6xl px-4 sm:px-6 py-8">
+  <div class="text-center mb-6">
+    <h1 class="text-3xl sm:text-4xl font-extrabold" style="color:#0f172a">Life Milestones & Days-Alive Calculator</h1>
+    <p class="mt-2 text-slate-600 max-w-2xl mx-auto">You have birthdays every year — but you only get one 10,000th day. DayStone counts the days you have lived, finds your upcoming milestone days with their exact dates, and reveals your golden birthday.</p>
+    <span class="inline-block mt-3 px-3 py-1 rounded-full text-xs font-bold text-white pri">✓ Unlimited Free Usage — No Signup, No Watermark</span>
+  </div>
+  <div class="card max-w-2xl mx-auto">
+  <div class="flex gap-3 flex-wrap"><div class="flex-1 min-w-[200px]"><label>Date of birth</label><input id="dob" type="date" value="1995-06-15"></div><button class="btn self-end" onclick="calc()">Find My Milestones</button></div>
+  <div class="text-center my-5"><div class="text-sm font-bold">DAYS ALIVE TODAY</div><div id="alive" class="text-6xl font-extrabold prit">–</div><div id="extra" class="text-slate-600 mt-1"></div></div>
+  <div class="overflow-x-auto"><table class="dt" id="tbl"></table></div>
+  <div id="golden" class="mt-4 font-semibold"></div>
+  <button class="btn2 w-full mt-3" onclick="share()">📋 Copy my milestones card</button>
+  <div id="copied" class="text-sm prit font-semibold mt-1"></div>
+ </div>
+</main>
+<div class="no-print mx-auto max-w-6xl px-4 sm:px-6 pb-4" role="complementary" aria-label="Advertisement">
+  <div class="mx-auto text-center" style="max-width:300px">
+    <span class="block text-[10px] tracking-[0.18em] uppercase text-slate-400 mb-1.5">Advertisement</span>
+    <div class="flex justify-center overflow-hidden">
+      <script>
+(function(grnp){
+var d = document,
+    s = d.createElement('script'),
+    l = d.currentScript || d.scripts[d.scripts.length - 1];
+s.settings = grnp || {};
+s.src = "\/\/peacefulbicycle.com\/bnXtVJsnd.GElF0oYVWQcY\/Qe\/mf9qu-ZqUtlZk\/PzTHcx1LM\/jWIZwkMTj\/U\/t-NrzmUnyOMsj\/AzydO\/Qx";
+s.async = true;
+s.referrerPolicy = 'no-referrer-when-downgrade';
+l.parentNode.insertBefore(s, l);
+})({})
+</script>
+    </div>
+  </div>
+</div>
+<section class="mx-auto max-w-4xl px-4 sm:px-6 pb-6">
+  <article>
+  <h2>The celebrations hiding between your birthdays</h2>
+<p>Birthdays are annual, round and expected — cake, messages, done. But your life also contains rarer arithmetic anniversaries that almost nobody celebrates because almost nobody knows when they fall: your 5,000th day, your 10,000th day, your 20,000th. Each arrives exactly once. Your 10,000th day lands at about 27 years and 4 months; your 20,000th near age 54 and 9 months; a fortunate life contains a 30,000th day at 82. DayStone computes these dates from your birth date in one step, turning an invisible number — days alive — into a small calendar of private festivals.</p>
+<p>There is something quietly motivating about the day count itself. Years feel abstract and birthdays feel like judgements, but days are the actual currency of a life: spent one at a time, never refunded, each identical in length to the ones kings and newborns receive. Seeing yours stated plainly — eleven thousand and something, say — reframes time from a backdrop into an inventory. People who discover their count tend to share it, which is why the milestones card exists: the number starts conversations that 'I am 31' never does.</p>
+<h2>How the day count is calculated</h2>
+<p>The maths is simple and exact: count the midnights between your birth date and today. DayStone anchors both dates to local midnight so daylight-saving shifts and the time of day you happen to check cannot nudge the result — you gain precisely one day per day, including every leap day you have lived through (you have probably had more than you think: roughly one every four years of your life). The milestone finder then walks forward in thousand-day steps from your count to project the exact calendar dates of your next six milestones, with a live countdown to each.</p>
+<p>The golden birthday uses a different rule: it is the birthday on which your age matches the day of the month you were born — turning 23 on the 23rd, for example. It happens once, its date depends only on your birth date, and for people born late in a month it arrives fashionably late in life. Born on the 31st? Your golden birthday is your 31st, and you have waited long enough that it deserves a proper party.</p>
+<h2>Celebrating a milestone day well</h2>
+<p>Because a milestone day has no cultural script, you get to invent one — which is most of its charm. Mark a round thousand with something proportional: a 10,000th day might merit the trip you keep deferring; a child's 1,000th day is a beautiful excuse for a family photo tradition that repeats every thousand days, charting growth in a rhythm birthdays blur. Couples adopt shared milestones — the thousand-day anniversaries of meeting or marrying often land on pleasingly random weekdays that feel like secret holidays, known only to the two people counting.</p>
+<p>A growing custom is the milestone letter: on a child's 5,000th day, family members write letters to be opened at the 10,000th. DayStone's dates make such projects schedulable years ahead — put the next two milestones in your calendar today, with a note of what you intend. Rituals fail when they rely on remembering; they succeed when they rely on a date somebody computed in advance.</p>
+<h2>Milestones for children, parents and everyone between</h2>
+<p>For babies, the day-count produces the milestones parents actually feel: day 100 (a celebration in several cultures), day 365, the 1,000th day in the toddler years. Grandparents often find the deepest resonance at the other end: a parent's 25,000th or 30,000th day is a milestone with a guest list of descendants. Entering a parent's birth date here and sending them the date of their next thousand is a small, unusual gift — people are rarely celebrated for simply, stubbornly, wonderfully persisting.</p>
+<p>Teams and companies borrow the trick too: a startup's 1,000th day, a shop's 10,000th customer-day, a sobriety or fitness streak counted in days rather than months. The day is the honest unit of every streak, and streaks are how large changes actually happen. If you maintain any daily practice, your practice has a next thousand-day milestone — find it, and let it pull you.</p>
+<h2>What 10,000 days does to a perspective</h2>
+<p>Writers on time perception note that days feel slower when counted and faster when rounded into years. 'Ten years ago' is a shrug; '3,652 days ago' is a texture. Reviewing your count against a rough total — an 80-year life holds about 29,200 days — is not morbid arithmetic; it is budgeting with the only currency that cannot be earned back. Many people leave this page and immediately protect one recurring hour differently. That is the calculator's real output: not the dates, but the slight, useful urgency the dates create.</p>
+<p>DayStone keeps your birth date in your browser only — nothing is sent or stored — because a date of birth is an identity document in disguise and deserves that respect. Compute your milestones, copy the card if you like, and close the tab with the numbers in your head, where they will do their quiet work.</p>
+<h2>Plan one milestone now</h2>
+<p>Before you leave: pick the nearest milestone from your table — for most people it is within the next thousand days, often within the year — and decide, concretely, how it will be marked. A name, a place, a person to invite. The difference between people who celebrate their lives deliberately and people who watch them blur is rarely money or time. It is that the first group writes dates down. Your table above is full of dates. Choose one.</p>
+<h2>Milestones beyond birthdays: streaks and shared counts</h2>
+<p>The day-count habit generalises anywhere persistence matters. A recovery streak, a language-learning run, a shop's days since opening, a couple's days since meeting — each has thousand-day milestones that arrive with the same quiet force as the personal ones, and each deserves the same treatment: compute the date now, write it down, and let the future celebration pull the present behaviour. Streaks break; milestones, being dates rather than chains, survive a broken streak and offer a fresh target, which is why many people find them kinder motivators.</p>
+<p>Try the shared version: compute the day-count of a friendship, a marriage or a team from its start date and send the next milestone to the other members today. It costs nothing, it is oddly moving, and it manufactures an occasion out of arithmetic — the most reliable kind, since arithmetic always shows up on time.</p>
+<h2>The mathematics of a well-kept count</h2>
+<p>There is a reason the day count feels truer than the year count: a human life contains only about eleven thousand-day chapters even at a generous lifespan, few enough to hold in the imagination at once. Your current chapter — say, the one between day 11,000 and day 12,000 — is a thousand mornings with a theme you get to choose, which is a strangely practical unit for ambition: long enough for a language, a book, a transformed habit; short enough to begin today without theatre. Write the chapter's dates on the first page of a notebook. The calculator supplies the arithmetic; the meaning is, as always, an inside job.</p>
+<h2>Counting forward, not just back</h2>
+<p>Every milestone table on this page faces forward, and that orientation is the point: a life reviewed only in elapsed days becomes an audit, while the same days arranged as upcoming dates become invitations. Your next thousand-day chapter boundary is already scheduled by arithmetic; the only open question is whether it will be marked deliberately or noticed in retrospect. Choose the date from your table, give it a name and a witness, and let the count do what counts have done since the first calendar — turn time from weather into architecture.</p>
+  <h2>Frequently Asked Questions</h2>
+  <details class="faq"><summary>When is my 10,000th day?</summary><p>About 27 years and 4.5 months after your birth — the exact date depends on how many leap days fall in your span. Enter your birth date above and your milestone table shows it precisely, with a countdown.</p></details>
+<details class="faq"><summary>What is a golden birthday?</summary><p>The birthday when your age equals your birth date's day number — turning 24 on the 24th, for instance. It happens once in a lifetime, and DayStone shows its date alongside your day milestones.</p></details>
+<details class="faq"><summary>How are days alive counted — do leap days count?</summary><p>Yes, every real day counts, including 29 February in leap years. The calculator counts midnights between your birth date and today, so the time of day you check never skews the total.</p></details>
+<details class="faq"><summary>Can I find milestones for my child or parent?</summary><p>Absolutely — enter any birth date. Parents enjoy children's 100th, 1,000th and 5,000th days, and a parent's upcoming thousand-day milestone makes a thoughtful, unusual celebration.</p></details>
+<details class="faq"><summary>Is my date of birth stored or shared?</summary><p>No. All calculation happens in your browser; nothing is transmitted or saved. The share card contains only what you choose to copy — your day count and milestone dates.</p></details>
+<details class="faq"><summary>Why celebrate days instead of birthdays?</summary><p>Birthdays repeat yearly and blur together; thousand-day milestones are rarer, land on unexpected dates, and mark the actual unit a life is lived in. They are extra festivals hiding in arithmetic you already own.</p></details>
+  </article>
+</section>
+<footer class="mt-6 py-8" style="background:#450A0A;color:#FEF2F2">
+  <div class="mx-auto max-w-6xl px-4 sm:px-6 text-center text-sm">
+    <p class="font-bold text-base">DayStone</p>
+    <p class="opacity-80 mt-1">Free life milestones calculator. Enter your birth date to see days alive, your next milestone days (5,000th, 10,000th, 20,000th day), your golden birthday and a shareable milestones card.</p>
+    <p class="mt-2"><a href="#top" class="underline">Home</a> · <a href="https://fixoraa.tech" class="underline">More Tools</a></p>
+    <p class="fx-credit" style="text-align:center;font-size:12.5px;opacity:.62;margin:10px auto 2px;letter-spacing:.01em">Made by <a href="https://fixoraa.tech" target="_blank" rel="noopener" style="color:inherit;font-weight:700;text-decoration:underline;text-underline-offset:2px">Fixoraa</a></p>
+  </div>
+</footer>
+<script id="lib-daystone">
+
+function daysAlive(dob, today){
+  var ms = today.setHours(0,0,0,0) - new Date(dob).setHours(0,0,0,0);
+  return Math.round(ms/86400000);
+}
+function nextMilestones(dob, today, count){
+  var lived = daysAlive(dob, new Date(today));
+  var out=[]; var step=1000; var next = Math.ceil((lived+1)/step)*step;
+  while(out.length<count){
+    var d = new Date(dob); d.setDate(d.getDate()+next);
+    out.push({days:next, date:d.toISOString().slice(0,10), inDays: next-lived});
+    next += (next>=10000? step* (next>=20000?2:1) : step);
+    if (out.length>1 && out[out.length-1].days===out[out.length-2].days) next+=step;
+  }
+  return out;
+}
+function goldenBirthday(dob){
+  var d=new Date(dob); return {age:d.getDate(), year:d.getFullYear()+d.getDate(), date:new Date(d.getFullYear()+d.getDate(), d.getMonth(), d.getDate()).toISOString().slice(0,10)};
+}
+if (typeof module!=="undefined") module.exports={daysAlive:daysAlive, nextMilestones:nextMilestones, goldenBirthday:goldenBirthday};
+
+</script>
+<script>
+
+var CARD='';
+function calc(){
+  var dob=document.getElementById('dob').value; if(!dob) return;
+  var today=new Date();
+  var lived=daysAlive(dob,today);
+  document.getElementById('alive').textContent=lived.toLocaleString('en-IN');
+  document.getElementById('extra').textContent='That is '+(lived*24).toLocaleString('en-IN')+' hours, or about '+(lived*86400).toLocaleString('en-IN')+' seconds of you so far.';
+  var ms=nextMilestones(dob,today,6);
+  document.getElementById('tbl').innerHTML='<tr><th>Milestone</th><th>Date</th><th>Countdown</th></tr>'+ms.map(function(m){return '<tr><td><b>Day '+m.days.toLocaleString('en-IN')+'</b></td><td>'+m.date+'</td><td>in '+m.inDays.toLocaleString('en-IN')+' days</td></tr>';}).join('');
+  var g=goldenBirthday(dob);
+  document.getElementById('golden').textContent='🎂 Your golden birthday — when you turn your birth date number ('+g.age+') — falls on '+g.date+'.';
+  CARD='My DayStone milestones: '+lived.toLocaleString('en-IN')+' days alive today. Next: day '+ms[0].days.toLocaleString('en-IN')+' on '+ms[0].date+'. Golden birthday: '+g.date+'. Find yours: https://time.fixoraa.tech/daystone/';
+}
+function share(){ if(navigator.clipboard)navigator.clipboard.writeText(CARD); document.getElementById('copied').textContent='✅ Milestones card copied — share it anywhere.'; }
+calc();
+
+</script>
+</body>
+</html>
